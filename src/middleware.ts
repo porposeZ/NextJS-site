@@ -1,37 +1,52 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { auth } from "~/server/auth"; // из src/server/auth/index.ts
+import { getToken } from "next-auth/jwt";
 
+/**
+ * Единый guard для приватных и auth-страниц.
+ * Работает на edge, Prisma не трогает — читаем только JWT из куки.
+ */
 export async function middleware(req: NextRequest) {
-  const session = await auth();
+  const token = await getToken({
+    req,
+    secret: process.env.AUTH_SECRET, // должен совпадать с .env.local
+  });
+
   const { pathname, search } = req.nextUrl;
 
-  // защищаем приватные разделы
-  const requiresAuth =
+  // 1) Если уже залогинен и идёт на /auth/* — отправим на /orders
+  if (pathname.startsWith("/auth")) {
+    if (token) {
+      const url = req.nextUrl.clone();
+      url.pathname = "/orders";
+      url.search = search;
+      return NextResponse.redirect(url);
+    }
+    return NextResponse.next();
+  }
+
+  // 2) Приватные маршруты — пускаем только с токеном
+  const isProtected =
     pathname.startsWith("/orders") ||
     pathname.startsWith("/profile") ||
     pathname.startsWith("/account");
 
-  // если не залогинен и пытается зайти в приватное — бросаем на /auth/signin
-  if (requiresAuth && !session?.user) {
+  if (isProtected && !token) {
     const url = req.nextUrl.clone();
     url.pathname = "/auth/signin";
-    // чтобы после логина вернуть обратно
+    // вернём пользователя обратно после логина
     url.search = new URLSearchParams({ callbackUrl: req.url }).toString();
     return NextResponse.redirect(url);
   }
 
-  // если уже залогинен и идёт на /auth/* — отправим его в /orders
-  if (session?.user && pathname.startsWith("/auth")) {
-    const url = req.nextUrl.clone();
-    url.pathname = "/orders";
-    url.search = search;
-    return NextResponse.redirect(url);
-  }
-
+  // Публичные страницы — пропускаем
   return NextResponse.next();
 }
 
+/**
+ * Укажи, какие пути обрабатывает middleware.
+ * Лендинг "/" оставляем публичным; добавь сюда "/" если хочешь закрыть главную.
+ */
 export const config = {
   matcher: ["/auth/:path*", "/orders/:path*", "/profile/:path*", "/account/:path*"],
 };

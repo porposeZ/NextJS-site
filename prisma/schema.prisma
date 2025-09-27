@@ -92,7 +92,7 @@ model Order {
   budget      Int?
   status      OrderStatus @default(REVIEW)
   createdAt   DateTime    @default(now())
-
+  dueDate     DateTime?   // 👈 ДОБАВИЛИ: дата исполнения (из поля "Дата")
   @@index([userId, createdAt])
 }
 
