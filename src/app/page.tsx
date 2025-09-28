@@ -9,12 +9,12 @@ import { Label } from "~/components/ui/label";
 import { useForm } from "react-hook-form";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { createOrder } from "./actions/createOrder";
+import { createOrder, type CreateOrderResult } from "./actions/createOrder";
 
 type FormData = {
-  fio: string;     // сейчас в заказ не пишем — позже сделаем профиль/контакты
-  phone: string;   // —//—
-  email: string;   // —//—
+  fio: string;
+  phone: string;
+  email: string;
   city: string;
   date: string;    // YYYY-MM-DD
   details: string;
@@ -28,7 +28,7 @@ export default function HomePage() {
   const onSubmit = async (data: FormData) => {
     setLoading(true);
     try {
-      const res = await createOrder({
+      const res: CreateOrderResult = await createOrder({
         city: data.city,
         details: data.details,
         date: data.date || undefined,
@@ -39,12 +39,12 @@ export default function HomePage() {
           router.push("/auth/signin?callbackUrl=/");
           return;
         }
-        alert("Проверьте поля формы");
+        alert("Не удалось создать заказ. Проверьте поля формы.");
         return;
       }
 
       reset();
-      router.push("/orders"); // после создания — в Мои заказы
+      router.push("/orders");
     } finally {
       setLoading(false);
     }
