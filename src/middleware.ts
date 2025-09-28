@@ -3,18 +3,18 @@ import type { NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
 
 /**
- * Единый guard для приватных и auth-страниц.
- * Работает на edge, Prisma не трогает — читаем только JWT из куки.
+ * Guard для приватных и auth-страниц.
+ * Работает на edge: читаем только JWT из куки.
  */
 export async function middleware(req: NextRequest) {
   const token = await getToken({
     req,
-    secret: process.env.AUTH_SECRET, // должен совпадать с .env.local
+    secret: process.env.AUTH_SECRET,
   });
 
   const { pathname, search } = req.nextUrl;
 
-  // 1) Если уже залогинен и идёт на /auth/* — отправим на /orders
+  // Уже залогинен и идёт на /auth/* — отправим на /orders
   if (pathname.startsWith("/auth")) {
     if (token) {
       const url = req.nextUrl.clone();
@@ -25,7 +25,7 @@ export async function middleware(req: NextRequest) {
     return NextResponse.next();
   }
 
-  // 2) Приватные маршруты — пускаем только с токеном
+  // Приватные маршруты — пускаем только с токеном
   const isProtected =
     pathname.startsWith("/orders") ||
     pathname.startsWith("/profile") ||
@@ -34,19 +34,17 @@ export async function middleware(req: NextRequest) {
   if (isProtected && !token) {
     const url = req.nextUrl.clone();
     url.pathname = "/auth/signin";
-    // вернём пользователя обратно после логина
-    url.search = new URLSearchParams({ callbackUrl: req.url }).toString();
+
+    // ВАЖНО: callbackUrl делаем относительным, без хоста
+    const returnTo = `${pathname}${search}`;
+    url.search = new URLSearchParams({ callbackUrl: returnTo }).toString();
+
     return NextResponse.redirect(url);
   }
 
-  // Публичные страницы — пропускаем
   return NextResponse.next();
 }
 
-/**
- * Укажи, какие пути обрабатывает middleware.
- * Лендинг "/" оставляем публичным; добавь сюда "/" если хочешь закрыть главную.
- */
 export const config = {
   matcher: ["/auth/:path*", "/orders/:path*", "/profile/:path*", "/account/:path*"],
 };

@@ -1,8 +1,7 @@
 import NextAuth from "next-auth";
 import { authConfig } from "~/server/auth/config";
 
-// 👇 важно: запрещаем edge, только nodejs
+// Prisma требует nodejs-рантайм
 export const runtime = "nodejs";
 
-const { handlers } = NextAuth(authConfig);
-export const { GET, POST } = handlers;
+export const { GET, POST } = NextAuth(authConfig).handlers;
