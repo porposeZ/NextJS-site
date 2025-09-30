@@ -14,7 +14,7 @@ export async function middleware(req: NextRequest) {
 
   const { pathname, search } = req.nextUrl;
 
-  // Уже залогинен и идёт на /auth/* — отправим на /orders
+  // /auth/* — если уже залогинен, то в /orders
   if (pathname.startsWith("/auth")) {
     if (token) {
       const url = req.nextUrl.clone();
@@ -25,7 +25,29 @@ export async function middleware(req: NextRequest) {
     return NextResponse.next();
   }
 
-  // Приватные маршруты — пускаем только с токеном
+  // /admin/* — только админ (по email)
+  if (pathname.startsWith("/admin")) {
+    const admin = (process.env.ADMIN_EMAIL || "").toLowerCase();
+    const email = (token?.email || "").toLowerCase();
+
+    if (!token) {
+      const url = req.nextUrl.clone();
+      url.pathname = "/auth/signin";
+      url.search = new URLSearchParams({ callbackUrl: "/admin/orders" }).toString();
+      return NextResponse.redirect(url);
+    }
+
+    if (!admin || email !== admin) {
+      const url = req.nextUrl.clone();
+      url.pathname = "/";
+      url.search = "";
+      return NextResponse.redirect(url);
+    }
+
+    return NextResponse.next();
+  }
+
+  // Приватные юзер-страницы
   const isProtected =
     pathname.startsWith("/orders") ||
     pathname.startsWith("/profile") ||
@@ -34,11 +56,8 @@ export async function middleware(req: NextRequest) {
   if (isProtected && !token) {
     const url = req.nextUrl.clone();
     url.pathname = "/auth/signin";
-
-    // ВАЖНО: callbackUrl делаем относительным, без хоста
     const returnTo = `${pathname}${search}`;
     url.search = new URLSearchParams({ callbackUrl: returnTo }).toString();
-
     return NextResponse.redirect(url);
   }
 
@@ -46,5 +65,11 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/auth/:path*", "/orders/:path*", "/profile/:path*", "/account/:path*"],
+  matcher: [
+    "/auth/:path*",
+    "/orders/:path*",
+    "/profile/:path*",
+    "/account/:path*",
+    "/admin/:path*",
+  ],
 };
