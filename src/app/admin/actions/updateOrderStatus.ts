@@ -10,20 +10,18 @@ import { env } from "~/server/env";
 
 const STATUSES = ["REVIEW","AWAITING_PAYMENT","IN_PROGRESS","DONE","CANCELED"] as const;
 type OrderStatus = typeof STATUSES[number];
-type PaymentMethod = "yookassa" | "card" | undefined;
 
 export async function updateOrderStatus(formData: FormData) {
   await requireAdmin();
 
   const id = String(formData.get("id") ?? "");
   const status = String(formData.get("status") ?? "") as OrderStatus;
-  const paymentMethod = (String(formData.get("paymentMethod") ?? "") || undefined) as PaymentMethod;
 
   if (!id || !STATUSES.includes(status)) throw new Error("Invalid input");
 
   await db.order.update({ where: { id }, data: { status } });
 
-  // письмо пользователю
+  // письмо пользователю о смене статуса
   try {
     const order = await db.order.findUnique({
       where: { id },
@@ -34,7 +32,6 @@ export async function updateOrderStatus(formData: FormData) {
       await sendMail({
         to: order.user.email,
         subject: `Статус вашей заявки: ${readableStatus(status)}`,
-        // без JSX в этом файле
         react: React.createElement(OrderStatusChangedEmail, {
           status,
           order: {
@@ -44,7 +41,6 @@ export async function updateOrderStatus(formData: FormData) {
             createdAt: order.createdAt,
             dueDate: order.dueDate ?? undefined,
           },
-          paymentMethod,
           appUrl,
           userName: order.user.name ?? undefined,
         }),

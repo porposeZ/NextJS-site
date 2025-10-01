@@ -1,12 +1,13 @@
 import { redirect } from "next/navigation";
 import { db } from "~/server/db";
 import { Card } from "~/components/ui/card";
-import { auth } from "~/server/auth"; // ✅
+import { auth } from "~/server/auth";
+import UserOrderCard from "./UserOrderCard";
 
 export const metadata = { title: "Мои заказы" };
 
 export default async function OrdersPage() {
-  const session = await auth();                       // ✅
+  const session = await auth();
   if (!session?.user?.id) redirect("/auth/signin?callbackUrl=/orders");
 
   const orders = await db.order.findMany({
@@ -23,20 +24,7 @@ export default async function OrdersPage() {
       ) : (
         <div className="grid gap-4">
           {orders.map((o) => (
-            <Card key={o.id} className="p-4">
-              <div className="flex items-center justify-between">
-                <div className="font-semibold">{o.city}</div>
-                <span className="rounded-full bg-sky-50 px-3 py-1 text-xs font-medium text-sky-700">
-                  {o.status}
-                </span>
-              </div>
-
-              <div className="mt-2 text-sm whitespace-pre-wrap">{o.description}</div>
-
-              <div className="mt-2 text-xs text-slate-500">
-                Создано: {o.createdAt.toLocaleString()}
-              </div>
-            </Card>
+            <UserOrderCard key={o.id} order={o} />
           ))}
         </div>
       )}

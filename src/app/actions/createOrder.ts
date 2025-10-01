@@ -8,6 +8,7 @@ import { db } from "~/server/db";
 import { env } from "~/server/env";
 import { sendMail } from "~/server/email/send";
 import NewOrderEmail from "~/emails/NewOrderEmail";
+import OrderCreatedEmail from "~/emails/OrderCreatedEmail";
 
 const Input = z.object({
   city: z.string().min(1, "Город обязателен"),
@@ -47,14 +48,15 @@ export async function createOrder(raw: unknown): Promise<CreateOrderResult> {
       },
     });
 
-    // письмо админу (если задан ADMIN_EMAIL)
+    const appUrl = env.AUTH_URL ?? env.NEXTAUTH_URL;
+
+    // письмо админу (если указан ADMIN_EMAIL)
     const adminEmail = process.env.ADMIN_EMAIL;
     if (adminEmail) {
-      const adminLink = `${env.AUTH_URL ?? env.NEXTAUTH_URL}/admin/orders`;
+      const adminLink = `${appUrl}/admin/orders`;
       await sendMail({
         to: adminEmail,
         subject: "Новая заявка на сайте",
-        // без JSX в этом файле
         react: React.createElement(NewOrderEmail, {
           order: {
             id: order.id,
@@ -71,6 +73,25 @@ export async function createOrder(raw: unknown): Promise<CreateOrderResult> {
           adminLink,
         }),
       }).catch((e) => console.warn("[email] admin new-order failed:", e));
+    }
+
+    // письмо пользователю — «заявка принята и рассматривается»
+    if (order.user?.email) {
+      await sendMail({
+        to: order.user.email,
+        subject: "Заявка получена и принята в работу",
+        react: React.createElement(OrderCreatedEmail, {
+          order: {
+            id: order.id,
+            city: order.city,
+            description: order.description,
+            createdAt: order.createdAt,
+            dueDate: order.dueDate ?? undefined,
+          },
+          appUrl,
+          userName: order.user.name ?? undefined,
+        }),
+      }).catch((e) => console.warn("[email] user order-created failed:", e));
     }
 
     revalidatePath("/orders");
