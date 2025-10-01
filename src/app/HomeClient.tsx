@@ -77,7 +77,7 @@ export default function HomeClient(props: {
     const res = await createOrder({
       city: data.city,
       details: data.details,
-      date: data.date || undefined,
+      date: data.date, // теперь обязательно
     });
 
     if (!res.ok) {
@@ -173,7 +173,8 @@ export default function HomeClient(props: {
 
           <div>
             <Label>Дата исполнения</Label>
-            <Input type="date" {...register("date")} />
+            <Input type="date" {...register("date", { required: "Выберите дату исполнения" })} />
+            {errors.date && <p className="mt-1 text-xs text-red-600">{errors.date.message as string}</p>}
           </div>
 
           <div className="md:col-span-2">
