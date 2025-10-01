@@ -9,6 +9,7 @@ import { env } from "~/server/env";
 import { sendMail } from "~/server/email/send";
 import NewOrderEmail from "~/emails/NewOrderEmail";
 import OrderCreatedEmail from "~/emails/OrderCreatedEmail";
+import { rateLimitUser } from "~/server/rateLimit";
 
 const Input = z.object({
   city: z.string().min(1, "Город обязателен"),
@@ -18,7 +19,14 @@ const Input = z.object({
 
 export type CreateOrderResult =
   | { ok: true; id: string }
-  | { ok: false; error: "NOT_AUTHENTICATED" | "VALIDATION_ERROR" | "DB_ERROR" };
+  | {
+      ok: false;
+      error:
+        | "NOT_AUTHENTICATED"
+        | "VALIDATION_ERROR"
+        | "DB_ERROR"
+        | "RATE_LIMIT";
+    };
 
 export async function createOrder(raw: unknown): Promise<CreateOrderResult> {
   const session = await auth();
@@ -29,8 +37,20 @@ export async function createOrder(raw: unknown): Promise<CreateOrderResult> {
   if (!parsed.success) return { ok: false, error: "VALIDATION_ERROR" };
 
   const { city, details, date } = parsed.data;
-  const dueDate =
-    date && date.trim().length > 0 ? new Date(`${date}T00:00:00.000Z`) : undefined;
+
+  // валидация даты (не в прошлом)
+  let dueDate: Date | undefined = undefined;
+  if (date && date.trim()) {
+    const d = new Date(`${date}T00:00:00.000Z`);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (d < today) return { ok: false, error: "VALIDATION_ERROR" };
+    dueDate = d;
+  }
+
+  // rate-limit: не чаще N раз за окно
+  const ok = await rateLimitUser("createOrder", userId, { max: 10, windowMinutes: 5 });
+  if (!ok) return { ok: false, error: "RATE_LIMIT" };
 
   try {
     const data: any = { userId, city, description: details, status: "REVIEW" };
@@ -48,9 +68,19 @@ export async function createOrder(raw: unknown): Promise<CreateOrderResult> {
       },
     });
 
+    // история: создано
+    await db.orderEvent.create({
+      data: {
+        orderId: order.id,
+        userId,
+        type: "CREATED",
+        message: "Заявка создана пользователем",
+      },
+    });
+
     const appUrl = env.AUTH_URL ?? env.NEXTAUTH_URL;
 
-    // письмо админу (если указан ADMIN_EMAIL)
+    // письмо админу
     const adminEmail = process.env.ADMIN_EMAIL;
     if (adminEmail) {
       const adminLink = `${appUrl}/admin/orders`;
@@ -75,7 +105,7 @@ export async function createOrder(raw: unknown): Promise<CreateOrderResult> {
       }).catch((e) => console.warn("[email] admin new-order failed:", e));
     }
 
-    // письмо пользователю — «заявка принята и рассматривается»
+    // письмо пользователю — «заявка получена»
     if (order.user?.email) {
       await sendMail({
         to: order.user.email,

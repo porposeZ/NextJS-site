@@ -7,10 +7,6 @@ generator client {
 
 datasource db {
   provider = "sqlite"
-  // NOTE: When using mysql or sqlserver, uncomment the @db.Text annotations in model Account below
-  // Further reading:
-  // https://next-auth.js.org/adapters/prisma#create-the-prisma-schema
-  // https://www.prisma.io/docs/reference/api-reference/prisma-schema-reference#string
   url      = env("DATABASE_URL")
 }
 
@@ -64,7 +60,8 @@ model User {
   sessions      Session[]
   posts         Post[]
   orders        Order[]
-	phone          String?  @unique
+  phone         String?   @unique
+  events        OrderEvent[]
 }
 
 model VerificationToken {
@@ -92,7 +89,8 @@ model Order {
   budget      Int?
   status      OrderStatus @default(REVIEW)
   createdAt   DateTime    @default(now())
-  dueDate     DateTime?   // 👈 ДОБАВИЛИ: дата исполнения (из поля "Дата")
+  dueDate     DateTime?
+  events      OrderEvent[]
   @@index([userId, createdAt])
 }
 
@@ -103,4 +101,33 @@ model EmailRequest {
   createdAt DateTime @default(now())
 
   @@index([email, createdAt])
+}
+
+// === НОВОЕ: история событий по заказам ===
+enum OrderEventType {
+  CREATED
+  STATUS_CHANGED
+  PAYMENT_METHOD_SELECTED
+  NOTE
+}
+
+model OrderEvent {
+  id        String         @id @default(cuid())
+  orderId   String
+  order     Order          @relation(fields: [orderId], references: [id])
+  userId    String?
+  user      User?          @relation(fields: [userId], references: [id])
+  type      OrderEventType
+  message   String
+  createdAt DateTime       @default(now())
+
+  @@index([orderId, createdAt])
+}
+
+// === НОВОЕ: общий лог действий для rate-limit ===
+model ActionLog {
+  id        String   @id @default(cuid())
+  key       String
+  createdAt DateTime @default(now())
+  @@index([key, createdAt])
 }

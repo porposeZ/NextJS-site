@@ -19,9 +19,18 @@ export async function updateOrderStatus(formData: FormData) {
 
   if (!id || !STATUSES.includes(status)) throw new Error("Invalid input");
 
-  await db.order.update({ where: { id }, data: { status } });
+  const updated = await db.order.update({ where: { id }, data: { status } });
 
-  // письмо пользователю о смене статуса
+  // история: смена статуса
+  await db.orderEvent.create({
+    data: {
+      orderId: id,
+      type: "STATUS_CHANGED",
+      message: `Статус изменён на ${status}`,
+    },
+  });
+
+  // письмо пользователю
   try {
     const order = await db.order.findUnique({
       where: { id },

@@ -5,6 +5,13 @@ import { Card } from "~/components/ui/card";
 import { Button } from "~/components/ui/button";
 import { updateOrderStatus } from "../actions/updateOrderStatus";
 
+type OrderEvent = {
+  id: string;
+  type: "CREATED" | "STATUS_CHANGED" | "PAYMENT_METHOD_SELECTED" | "NOTE";
+  message: string;
+  createdAt: string | Date;
+};
+
 type Order = {
   id: string;
   city: string;
@@ -13,6 +20,7 @@ type Order = {
   createdAt: string | Date;
   dueDate?: string | Date | null;
   user?: { email?: string | null; name?: string | null; phone?: string | null } | null;
+  events?: OrderEvent[];
 };
 
 const STATUSES = [
@@ -46,12 +54,32 @@ export default function OrderCard({ order }: { order: Order }) {
       <div className="mt-2 text-sm whitespace-pre-wrap">{order.description}</div>
 
       <div className="mt-3 grid gap-1 text-xs text-slate-600">
-        <div><b>Пользователь:</b> {order.user?.email ?? "—"}{order.user?.name ? ` (${order.user.name})` : ""}</div>
+        <div>
+          <b>Пользователь:</b> {order.user?.email ?? "—"}
+          {order.user?.name ? ` (${order.user.name})` : ""}
+        </div>
         <div><b>Телефон:</b> {order.user?.phone ?? "—"}</div>
         <div><b>Создано:</b> {new Date(order.createdAt).toLocaleString()}</div>
         {order.dueDate && <div><b>К исполнению:</b> {new Date(order.dueDate).toLocaleDateString()}</div>}
         <div><b>ID:</b> {order.id}</div>
       </div>
+
+      {/* История */}
+      {order.events && order.events.length > 0 && (
+        <div className="mt-3 rounded-md bg-slate-50 p-3 text-xs text-slate-700">
+          <div className="mb-2 font-semibold">История</div>
+          <ul className="space-y-1">
+            {order.events.map((e) => (
+              <li key={e.id}>
+                <span className="text-slate-500">
+                  {new Date(e.createdAt).toLocaleString()} —{" "}
+                </span>
+                {e.message}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       <div className="mt-4 flex items-center gap-2">
         <select
@@ -59,11 +87,18 @@ export default function OrderCard({ order }: { order: Order }) {
           onChange={(e) => setStatus(e.target.value as Order["status"])}
           className="rounded border px-2 py-1 text-sm"
         >
-          {STATUSES.map(s => (
-            <option key={s.v} value={s.v}>{s.label}</option>
+          {STATUSES.map((s) => (
+            <option key={s.v} value={s.v}>
+              {s.label}
+            </option>
           ))}
         </select>
-        <Button onClick={onSave} size="sm" className="bg-orange-500 hover:bg-orange-600" disabled={isPending}>
+        <Button
+          onClick={onSave}
+          size="sm"
+          className="bg-orange-500 hover:bg-orange-600"
+          disabled={isPending}
+        >
           {isPending ? "Сохраняем..." : "Сохранить"}
         </Button>
       </div>

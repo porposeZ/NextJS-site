@@ -7,9 +7,8 @@ import { db } from "~/server/db";
 import { env } from "~/server/env";
 import { sendMail } from "~/server/email/send";
 import OrderStatusChangedEmail from "~/emails/OrderStatusChangedEmail";
-// Update the import path if the file exists elsewhere, for example:
 import PaymentMethodChosenEmail from "~/emails/PaymentMethodChosenEmail";
-// Or create the file at src/emails/PaymentMethodChosenEmail.tsx if missing.
+import { rateLimitUser } from "~/server/rateLimit";
 
 type PaymentMethod = "yookassa" | "card";
 
@@ -24,6 +23,10 @@ export async function startPayment(formData: FormData) {
     throw new Error("Invalid input");
   }
 
+  // rate limit на старт оплаты
+  const ok = await rateLimitUser("startPayment", userId, { max: 10, windowMinutes: 5 });
+  if (!ok) throw new Error("Too many requests");
+
   const order = await db.order.findUnique({
     where: { id: orderId },
     include: { user: { select: { email: true, name: true } } },
@@ -31,9 +34,22 @@ export async function startPayment(formData: FormData) {
 
   if (!order || order.userId !== userId) throw new Error("Not found");
 
+  // история
+  await db.orderEvent.create({
+    data: {
+      orderId,
+      userId,
+      type: "PAYMENT_METHOD_SELECTED",
+      message:
+        paymentMethod === "card"
+          ? "Пользователь выбрал оплату банковской картой"
+          : "Пользователь выбрал оплату через ЮKassa",
+    },
+  });
+
   const appUrl = env.AUTH_URL ?? env.NEXTAUTH_URL;
 
-  // 1) Письмо админу — какой способ выбрал пользователь
+  // письмо админу — какой способ выбрал пользователь
   const adminEmail = process.env.ADMIN_EMAIL;
   if (adminEmail && order.user?.email) {
     await sendMail({
@@ -54,7 +70,7 @@ export async function startPayment(formData: FormData) {
     }).catch((e) => console.warn("[email] admin payment-method failed:", e));
   }
 
-  // 2) Письмо пользователю — напоминание/инструкции к оплате (тот же шаблон, что при смене статуса)
+  // письмо пользователю — инструкции к оплате
   if (order.user?.email) {
     await sendMail({
       to: order.user.email,

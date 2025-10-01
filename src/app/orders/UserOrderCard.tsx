@@ -5,6 +5,13 @@ import { Card } from "~/components/ui/card";
 import { Button } from "~/components/ui/button";
 import { startPayment } from "./actions/startPayment";
 
+type OrderEvent = {
+  id: string;
+  type: "CREATED" | "STATUS_CHANGED" | "PAYMENT_METHOD_SELECTED" | "NOTE";
+  message: string;
+  createdAt: string | Date;
+};
+
 type Order = {
   id: string;
   city: string;
@@ -12,21 +19,27 @@ type Order = {
   status: "REVIEW" | "AWAITING_PAYMENT" | "IN_PROGRESS" | "DONE" | "CANCELED";
   createdAt: string | Date;
   dueDate?: string | Date | null;
+  events?: OrderEvent[];
 };
 
 export default function UserOrderCard({ order }: { order: Order }) {
   const [showModal, setShowModal] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<"yookassa" | "card">("yookassa");
   const [isPending, startTransition] = useTransition();
+  const [toast, setToast] = useState<string | undefined>();
 
   function confirmPayment() {
     const fd = new FormData();
     fd.set("orderId", order.id);
     fd.set("paymentMethod", paymentMethod);
     startTransition(async () => {
-      await startPayment(fd);
-      setShowModal(false);
-      // здесь можно добавить тост/уведомление, если используешь
+      try {
+        await startPayment(fd);
+        setToast("Инструкции по оплате отправлены на вашу почту.");
+      } finally {
+        setShowModal(false);
+        setTimeout(() => setToast(undefined), 4000);
+      }
     });
   }
 
@@ -45,6 +58,23 @@ export default function UserOrderCard({ order }: { order: Order }) {
         Создано: {new Date(order.createdAt).toLocaleString()}
       </div>
 
+      {/* История */}
+      {order.events && order.events.length > 0 && (
+        <div className="mt-3 rounded-md bg-slate-50 p-3 text-xs text-slate-700">
+          <div className="mb-2 font-semibold">История</div>
+          <ul className="space-y-1">
+            {order.events.map((e) => (
+              <li key={e.id}>
+                <span className="text-slate-500">
+                  {new Date(e.createdAt).toLocaleString()} —{" "}
+                </span>
+                {e.message}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       {order.status === "AWAITING_PAYMENT" && (
         <div className="mt-4">
           <Button
@@ -54,6 +84,13 @@ export default function UserOrderCard({ order }: { order: Order }) {
           >
             Оплатить
           </Button>
+        </div>
+      )}
+
+      {/* Локальный тост */}
+      {toast && (
+        <div className="mt-3 rounded-md border border-green-200 bg-green-50 px-3 py-2 text-xs text-green-700">
+          {toast}
         </div>
       )}
 
