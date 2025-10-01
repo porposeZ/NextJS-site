@@ -18,23 +18,37 @@ export async function startPayment(formData: FormData) {
   if (!userId) throw new Error("Unauthorized");
 
   const orderId = String(formData.get("orderId") ?? "");
-  const paymentMethod = String(formData.get("paymentMethod") ?? "") as PaymentMethod;
+  const paymentMethod = String(
+    formData.get("paymentMethod") ?? "",
+  ) as PaymentMethod;
+
   if (!orderId || !["yookassa", "card"].includes(paymentMethod)) {
     throw new Error("Invalid input");
   }
 
-  // rate limit на старт оплаты
-  const ok = await rateLimitUser("startPayment", userId, { max: 10, windowMinutes: 5 });
+  // Rate limit на старт оплаты
+  const ok = await rateLimitUser("startPayment", userId, {
+    max: 10,
+    windowMinutes: 5,
+  });
   if (!ok) throw new Error("Too many requests");
 
   const order = await db.order.findUnique({
     where: { id: orderId },
-    include: { user: { select: { email: true, name: true } } },
+    include: {
+      user: {
+        select: {
+          email: true,
+          name: true,
+          notifyOnPayment: true, // 👈 настройки
+        },
+      },
+    },
   });
 
   if (!order || order.userId !== userId) throw new Error("Not found");
 
-  // история
+  // История
   await db.orderEvent.create({
     data: {
       orderId,
@@ -49,7 +63,7 @@ export async function startPayment(formData: FormData) {
 
   const appUrl = env.AUTH_URL ?? env.NEXTAUTH_URL;
 
-  // письмо админу — какой способ выбрал пользователь
+  // Письмо админу — какой способ выбрал пользователь
   const adminEmail = process.env.ADMIN_EMAIL;
   if (adminEmail && order.user?.email) {
     await sendMail({
@@ -70,8 +84,8 @@ export async function startPayment(formData: FormData) {
     }).catch((e) => console.warn("[email] admin payment-method failed:", e));
   }
 
-  // письмо пользователю — инструкции к оплате
-  if (order.user?.email) {
+  // Письмо пользователю — инструкции к оплате (если включено)
+  if (order.user?.email && (order.user.notifyOnPayment ?? true)) {
     await sendMail({
       to: order.user.email,
       subject: "Оплата заявки — инструкции",

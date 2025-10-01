@@ -1,3 +1,4 @@
+// src/app/actions/createOrder.ts
 "use server";
 
 import React from "react";
@@ -10,9 +11,13 @@ import { sendMail } from "~/server/email/send";
 import NewOrderEmail from "~/emails/NewOrderEmail";
 import OrderCreatedEmail from "~/emails/OrderCreatedEmail";
 import { rateLimitUser } from "~/server/rateLimit";
+import { isValidCity } from "~/lib/cities";
 
 const Input = z.object({
-  city: z.string().min(1, "Город обязателен"),
+  city: z
+    .string()
+    .trim()
+    .refine((v) => isValidCity(v), { message: "INVALID_CITY" }),
   details: z.string().min(1, "Описание обязательно"),
   date: z.string().optional(), // YYYY-MM-DD
 });
@@ -38,7 +43,7 @@ export async function createOrder(raw: unknown): Promise<CreateOrderResult> {
 
   const { city, details, date } = parsed.data;
 
-  // валидация даты (не в прошлом)
+  // дата не в прошлом
   let dueDate: Date | undefined = undefined;
   if (date && date.trim()) {
     const d = new Date(`${date}T00:00:00.000Z`);
@@ -48,9 +53,9 @@ export async function createOrder(raw: unknown): Promise<CreateOrderResult> {
     dueDate = d;
   }
 
-  // rate-limit: не чаще N раз за окно
-  const ok = await rateLimitUser("createOrder", userId, { max: 10, windowMinutes: 5 });
-  if (!ok) return { ok: false, error: "RATE_LIMIT" };
+  // Rate limit
+  const allowed = await rateLimitUser("createOrder", userId, { max: 10, windowMinutes: 5 });
+  if (!allowed) return { ok: false, error: "RATE_LIMIT" };
 
   try {
     const data: any = { userId, city, description: details, status: "REVIEW" };
@@ -64,18 +69,20 @@ export async function createOrder(raw: unknown): Promise<CreateOrderResult> {
         description: true,
         createdAt: true,
         dueDate: true,
-        user: { select: { email: true, name: true, phone: true } },
+        user: {
+          select: {
+            email: true,
+            name: true,
+            phone: true,
+            notifyOnStatusChange: true,
+          },
+        },
       },
     });
 
-    // история: создано
+    // история
     await db.orderEvent.create({
-      data: {
-        orderId: order.id,
-        userId,
-        type: "CREATED",
-        message: "Заявка создана пользователем",
-      },
+      data: { orderId: order.id, userId, type: "CREATED", message: "Заявка создана пользователем" },
     });
 
     const appUrl = env.AUTH_URL ?? env.NEXTAUTH_URL;
@@ -105,8 +112,8 @@ export async function createOrder(raw: unknown): Promise<CreateOrderResult> {
       }).catch((e) => console.warn("[email] admin new-order failed:", e));
     }
 
-    // письмо пользователю — «заявка получена»
-    if (order.user?.email) {
+    // письмо пользователю
+    if (order.user?.email && (order.user.notifyOnStatusChange ?? true)) {
       await sendMail({
         to: order.user.email,
         subject: "Заявка получена и принята в работу",

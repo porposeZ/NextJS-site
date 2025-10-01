@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -56,11 +53,17 @@ model User {
   email         String?   @unique
   emailVerified DateTime?
   image         String?
+  phone         String?   @unique
+
+  // 👇 Новое
+  defaultCity            String?
+  notifyOnStatusChange   Boolean  @default(true)
+  notifyOnPayment        Boolean  @default(true)
+
   accounts      Account[]
   sessions      Session[]
   posts         Post[]
   orders        Order[]
-  phone         String?   @unique
   events        OrderEvent[]
 }
 
@@ -91,6 +94,7 @@ model Order {
   createdAt   DateTime    @default(now())
   dueDate     DateTime?
   events      OrderEvent[]
+
   @@index([userId, createdAt])
 }
 
@@ -103,7 +107,7 @@ model EmailRequest {
   @@index([email, createdAt])
 }
 
-// === НОВОЕ: история событий по заказам ===
+// История
 enum OrderEventType {
   CREATED
   STATUS_CHANGED
@@ -124,7 +128,7 @@ model OrderEvent {
   @@index([orderId, createdAt])
 }
 
-// === НОВОЕ: общий лог действий для rate-limit ===
+// Rate limit
 model ActionLog {
   id        String   @id @default(cuid())
   key       String

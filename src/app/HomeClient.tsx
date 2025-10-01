@@ -6,73 +6,95 @@ import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Textarea } from "~/components/ui/textarea";
 import { Label } from "~/components/ui/label";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { createOrder } from "./actions/createOrder";
+import { isValidCity } from "~/lib/cities";
+import CityCombobox from "~/components/CityCombobox";
 
 type FormData = {
   fio: string;
-  phone: string;
   email: string;
   city: string;
   date: string; // YYYY-MM-DD
   details: string;
 };
 
+function formatRuPhone(input: string) {
+  let d = input.replace(/\D/g, "");
+  if (d.startsWith("8")) d = "7" + d.slice(1);
+  if (d.length === 10 && d.startsWith("9")) d = "7" + d;
+  const valid = d.length === 11 && d[0] === "7";
+  let rest = d[0] === "7" ? d.slice(1) : d;
+  const p1 = rest.slice(0, 3);
+  const p2 = rest.slice(3, 6);
+  const p3 = rest.slice(6, 8);
+  const p4 = rest.slice(8, 10);
+  const formatted =
+    (p1 || p2 || p3 || p4)
+      ? `+7${p1 ? " " + p1 : ""}${p2 ? " " + p2 : ""}${p3 ? "-" + p3 : ""}${p4 ? "-" + p4 : ""}`
+      : (input.trim().startsWith("+") ? input : "");
+  return { formatted, valid, digits: d };
+}
+
 export default function HomeClient(props: {
-  user?: { name: string | null; email: string | null; phone: string | null };
+  user?: { name: string | null; email: string | null; phone: string | null; defaultCity?: string | null };
 }) {
   const { user } = props;
+  const router = useRouter();
+
+  const [phone, setPhone] = useState<string>(user?.phone ?? "");
+  const phoneState = useMemo(() => formatRuPhone(phone), [phone]);
+
   const {
     register,
     handleSubmit,
     reset,
-    formState: { errors },
+    control,
+    formState: { errors, isSubmitting },
   } = useForm<FormData>({
     defaultValues: {
       fio: user?.name ?? "",
       email: user?.email ?? "",
-      phone: user?.phone ?? "",
-      city: "",
+      city: user?.defaultCity ?? "",
       date: "",
       details: "",
     },
+    mode: "onBlur",
   });
 
-  const router = useRouter();
-  const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState<{ type: "ok" | "err"; text: string }>();
 
   const onSubmit = async (data: FormData) => {
-    setLoading(true);
     setToast(undefined);
-    try {
-      const res = await createOrder({
-        city: data.city,
-        details: data.details,
-        date: data.date || undefined,
-      });
 
-      if (!res.ok) {
-        if (res.error === "NOT_AUTHENTICATED") {
-          router.push("/auth/signin?callbackUrl=/");
-          return;
-        }
-        const msg =
-          res.error === "RATE_LIMIT"
-            ? "Слишком часто. Попробуйте позже."
-            : "Проверьте поля формы";
-        setToast({ type: "err", text: msg });
-        return;
-      }
-
-      reset({ ...data, city: "", date: "", details: "" });
-      setToast({ type: "ok", text: "Заявка создана. Смотрите в «Мои заказы»." });
-      router.push("/orders");
-    } finally {
-      setLoading(false);
+    if (phone.trim().length > 0 && !phoneState.valid) {
+      setToast({ type: "err", text: "Проверьте номер телефона." });
+      return;
     }
+
+    const res = await createOrder({
+      city: data.city,
+      details: data.details,
+      date: data.date || undefined,
+    });
+
+    if (!res.ok) {
+      const map: Record<string, string> = {
+        NOT_AUTHENTICATED: "Нужно войти в аккаунт.",
+        VALIDATION_ERROR: "Проверьте поля формы.",
+        RATE_LIMIT: "Слишком часто. Попробуйте позже.",
+        DB_ERROR: "Не удалось создать заказ.",
+      };
+      setToast({ type: "err", text: map[res.error] ?? "Ошибка" });
+      if (res.error === "NOT_AUTHENTICATED") router.push("/auth/signin?callbackUrl=/");
+      return;
+    }
+
+    reset({ ...data, date: "", details: "" });
+    setToast({ type: "ok", text: "Заявка создана. Смотрите в «Мои заказы»." });
+    router.push("/orders");
   };
 
   return (
@@ -108,26 +130,52 @@ export default function HomeClient(props: {
             <Label>ФИО</Label>
             <Input {...register("fio")} placeholder="Иванов Иван" />
           </div>
+
           <div>
             <Label>Электронная почта</Label>
             <Input type="email" {...register("email")} placeholder="you@mail.ru" />
           </div>
+
           <div>
             <Label>Номер телефона</Label>
-            <Input {...register("phone")} placeholder="+7 999 123-45-67" />
+            <Input
+              value={phone}
+              onChange={(e) => setPhone(formatRuPhone(e.target.value).formatted || e.target.value)}
+              placeholder="+7 999 123-45-67"
+            />
+            <div className="mt-1 text-xs">
+              {phone && !phoneState.valid ? (
+                <span className="text-red-600">Некорректный номер.</span>
+              ) : (
+                <span className="text-slate-500">Подставляется из личного кабинета (если указан).</span>
+              )}
+            </div>
           </div>
+
           <div>
             <Label>Город</Label>
-            <Input
-              {...register("city", { required: "Укажите город" })}
-              placeholder="Москва"
+            <Controller
+              control={control}
+              name="city"
+              rules={{
+                required: "Укажите город",
+                validate: (v) => isValidCity(v) || "Выберите город из списка",
+              }}
+              render={({ field, fieldState }) => (
+                <CityCombobox
+                  value={field.value}
+                  onChange={field.onChange}
+                  error={fieldState.error?.message ?? null}
+                />
+              )}
             />
-            {errors.city && <p className="mt-1 text-xs text-red-600">{errors.city.message}</p>}
           </div>
+
           <div>
             <Label>Дата исполнения</Label>
             <Input type="date" {...register("date")} />
           </div>
+
           <div className="md:col-span-2">
             <Label>Задача / подробности</Label>
             <Textarea
@@ -139,13 +187,17 @@ export default function HomeClient(props: {
               placeholder="Что нужно сделать поручителю?"
             />
             {errors.details && (
-              <p className="mt-1 text-xs text-red-600">{errors.details.message}</p>
+              <p className="mt-1 text-xs text-red-600">{errors.details.message as string}</p>
             )}
           </div>
 
           <div className="md:col-span-2">
-            <Button type="submit" className="bg-orange-500 hover:bg-orange-600" disabled={loading}>
-              {loading ? "Отправляем..." : "Создать заказ"}
+            <Button
+              type="submit"
+              className="bg-orange-500 hover:bg-orange-600"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? "Отправляем..." : "Создать заказ"}
             </Button>
           </div>
         </form>
