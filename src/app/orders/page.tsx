@@ -1,8 +1,8 @@
 import { redirect } from "next/navigation";
-import { db } from "~/server/db";
 import { auth } from "~/server/auth";
+import { db } from "~/server/db";
 import { Card } from "~/components/ui/card";
-import UserOrderCard from "./UserOrderCard";
+import UserOrderCard from "./UserOrderCard"; // <— default импорт
 
 export const metadata = { title: "Мои заказы" };
 
@@ -13,7 +13,6 @@ export default async function OrdersPage() {
   const orders = await db.order.findMany({
     where: { userId: session.user.id },
     orderBy: { createdAt: "desc" },
-    // историю намеренно не подгружаем
   });
 
   return (
@@ -21,7 +20,7 @@ export default async function OrdersPage() {
       <h1 className="text-2xl font-bold text-sky-700">Мои заказы</h1>
 
       {orders.length === 0 ? (
-        <p className="text-slate-600">Заказов пока нет.</p>
+        <Card className="p-4 text-slate-600">Заказов пока нет.</Card>
       ) : (
         <div className="grid gap-4">
           {orders.map((o) => (

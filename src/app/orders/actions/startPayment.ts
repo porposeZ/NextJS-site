@@ -1,110 +1,50 @@
 "use server";
 
-import React from "react";
-import { revalidatePath } from "next/cache";
 import { auth } from "~/server/auth";
 import { db } from "~/server/db";
-import { env } from "~/server/env";
-import { sendMail } from "~/server/email/send";
-import OrderStatusChangedEmail from "~/emails/OrderStatusChangedEmail";
-import PaymentMethodChosenEmail from "~/emails/PaymentMethodChosenEmail";
-import { rateLimitUser } from "~/server/rateLimit";
+import { revalidatePath } from "next/cache";
+import { OrderEventType } from "@prisma/client";
 
-type PaymentMethod = "yookassa" | "card";
-
+/**
+ * Старт оплаты со стороны пользователя.
+ * Ожидает:
+ *  - orderId
+ *  - paymentMethod: "yookassa" | "card"
+ */
 export async function startPayment(formData: FormData) {
   const session = await auth();
-  const userId = session?.user?.id;
-  if (!userId) throw new Error("Unauthorized");
+  if (!session?.user?.id) {
+    throw new Error("NOT_AUTHENTICATED");
+  }
 
   const orderId = String(formData.get("orderId") ?? "");
-  const paymentMethod = String(
-    formData.get("paymentMethod") ?? "",
-  ) as PaymentMethod;
+  const paymentMethod = String(formData.get("paymentMethod") ?? "");
 
   if (!orderId || !["yookassa", "card"].includes(paymentMethod)) {
     throw new Error("Invalid input");
   }
 
-  // Rate limit на старт оплаты
-  const ok = await rateLimitUser("startPayment", userId, {
-    max: 10,
-    windowMinutes: 5,
+  // Проверяем, что заказ принадлежит текущему пользователю
+  const order = await db.order.findFirst({
+    where: { id: orderId, userId: session.user.id },
+    select: { id: true },
   });
-  if (!ok) throw new Error("Too many requests");
+  if (!order) throw new Error("Order not found");
 
-  const order = await db.order.findUnique({
-    where: { id: orderId },
-    include: {
-      user: {
-        select: {
-          email: true,
-          name: true,
-          notifyOnPayment: true, // 👈 настройки
-        },
-      },
-    },
-  });
-
-  if (!order || order.userId !== userId) throw new Error("Not found");
-
-  // История
+  // Логируем выбор способа оплаты
   await db.orderEvent.create({
     data: {
       orderId,
-      userId,
-      type: "PAYMENT_METHOD_SELECTED",
+      userId: session.user.id,
+      type: OrderEventType.PAYMENT_METHOD_SELECTED, // <-- правильное значение из твоего enum
       message:
-        paymentMethod === "card"
-          ? "Пользователь выбрал оплату банковской картой"
-          : "Пользователь выбрал оплату через ЮKassa",
+        paymentMethod === "yookassa"
+          ? "Пользователь выбрал оплату через ЮKassa"
+          : "Пользователь выбрал оплату банковской картой",
     },
   });
 
-  const appUrl = env.AUTH_URL ?? env.NEXTAUTH_URL;
-
-  // Письмо админу — какой способ выбрал пользователь
-  const adminEmail = process.env.ADMIN_EMAIL;
-  if (adminEmail && order.user?.email) {
-    await sendMail({
-      to: adminEmail,
-      subject: "Пользователь выбрал способ оплаты",
-      react: React.createElement(PaymentMethodChosenEmail, {
-        order: {
-          id: order.id,
-          city: order.city,
-          description: order.description,
-          createdAt: order.createdAt,
-          dueDate: order.dueDate ?? undefined,
-        },
-        userEmail: order.user.email,
-        method: paymentMethod,
-        adminLink: `${appUrl}/admin/orders`,
-      }),
-    }).catch((e) => console.warn("[email] admin payment-method failed:", e));
-  }
-
-  // Письмо пользователю — инструкции к оплате (если включено)
-  if (order.user?.email && (order.user.notifyOnPayment ?? true)) {
-    await sendMail({
-      to: order.user.email,
-      subject: "Оплата заявки — инструкции",
-      react: React.createElement(OrderStatusChangedEmail, {
-        status: "AWAITING_PAYMENT",
-        order: {
-          id: order.id,
-          city: order.city,
-          description: order.description,
-          createdAt: order.createdAt,
-          dueDate: order.dueDate ?? undefined,
-        },
-        paymentMethod,
-        appUrl,
-        userName: order.user.name ?? undefined,
-      }),
-    }).catch((e) => console.warn("[email] user payment-instruction failed:", e));
-  }
-
+  // TODO: здесь позже добавим создание платёжной сессии/редирект
   revalidatePath("/orders");
-  return { ok: true as const };
+  return { ok: true as const, method: paymentMethod };
 }

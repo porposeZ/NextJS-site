@@ -2,7 +2,7 @@
 
 import { Card } from "~/components/ui/card";
 import { Button } from "~/components/ui/button";
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
 import { startPayment } from "./actions/startPayment";
 
 type Order = {
@@ -24,6 +24,17 @@ const RU_STATUS: Record<Order["status"], string> = {
 
 export default function UserOrderCard({ order }: { order: Order }) {
   const [isPending, start] = useTransition();
+  const [modal, setModal] = useState(false);
+  const [method, setMethod] = useState<"yookassa" | "card">("yookassa");
+
+  const confirm = () =>
+    start(async () => {
+      const fd = new FormData();
+      fd.set("orderId", order.id);
+      fd.set("paymentMethod", method);
+      await startPayment(fd);
+      setModal(false);
+    });
 
   return (
     <Card className="p-4 relative">
@@ -48,16 +59,47 @@ export default function UserOrderCard({ order }: { order: Order }) {
           <Button
             className="bg-orange-500 hover:bg-orange-600"
             disabled={isPending}
-            onClick={() =>
-              start(async () => {
-                const fd = new FormData();
-                fd.set("orderId", order.id); // <- передаём FormData, как ожидает серверный экшен
-                await startPayment(fd);
-              })
-            }
+            onClick={() => setModal(true)}
           >
-            {isPending ? "Открываем оплату..." : "Оплатить"}
+            Оплатить
           </Button>
+        </div>
+      )}
+
+      {modal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-lg">
+            <h2 className="text-lg font-semibold">Выберите способ оплаты</h2>
+            <div className="mt-4 grid gap-2">
+              <label className="flex items-center gap-2">
+                <input
+                  type="radio"
+                  name="pm"
+                  value="yookassa"
+                  checked={method === "yookassa"}
+                  onChange={() => setMethod("yookassa")}
+                />
+                ЮKassa
+              </label>
+              <label className="flex items-center gap-2">
+                <input
+                  type="radio"
+                  name="pm"
+                  value="card"
+                  checked={method === "card"}
+                  onChange={() => setMethod("card")}
+                />
+                Банковская карта
+              </label>
+            </div>
+
+            <div className="mt-6 flex justify-end gap-2">
+              <Button variant="secondary" onClick={() => setModal(false)}>Отмена</Button>
+              <Button className="bg-orange-500 hover:bg-orange-600" onClick={confirm} disabled={isPending}>
+                {isPending ? "Открываем оплату..." : "Продолжить"}
+              </Button>
+            </div>
+          </div>
         </div>
       )}
     </Card>
