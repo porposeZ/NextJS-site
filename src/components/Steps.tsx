@@ -1,34 +1,47 @@
-import Image from "next/image";
-import { Card } from "./ui/card";
+"use client";
 
-const steps = [
-  { title: "Создаёте заказ", img: "/steps/step1-create.png" },
-  { title: "Свяжется менеджер", img: "/steps/step2-contact.png" },
-  { title: "Оплатите заказ", img: "/steps/step3-pay.png" },
-  { title: "Подбор исполнителя", img: "/steps/step4-select.png" },
-  { title: "Выполнение задачи", img: "/steps/step5-do.png" },
-  { title: "Отчёт", img: "/steps/step6-report.png" },
+type Step = { title: string; text: string };
+
+const STEPS: Step[] = [
+  {
+    title: "Создайте заказ",
+    text: "Опишите задачу, город и желаемую дату исполнения.",
+  },
+  {
+    title: "Мы свяжемся",
+    text: "Менеджер уточнит детали и подберёт подходящего исполнителя.",
+  },
+  {
+    title: "Оплатите удобным способом",
+    text: "ЮKassa или банковская карта — быстро и безопасно.",
+  },
+  {
+    title: "Исполнитель выполнит задачу",
+    text: "Мы контролируем сроки и качество выполнения поручения.",
+  },
 ];
 
 export default function Steps() {
   return (
-    <section className="grid grid-cols-2 gap-4 md:grid-cols-6">
-      {steps.map((s) => (
-        <Card
-          key={s.title}
-          className="flex flex-col items-center gap-2 p-4 text-center text-sm shadow-md transition-transform hover:-translate-y-2 hover:shadow-lg"
-        >
-          <div className="relative h-20 w-20">
-            <Image
-              src={s.img}
-              alt={s.title}
-              fill
-              className="object-contain"
-            />
-          </div>
-          <p>{s.title}</p>
-        </Card>
-      ))}
+    <section aria-labelledby="howitworks" className="mx-auto max-w-5xl">
+      <h2 id="howitworks" className="mb-6 text-center text-2xl font-extrabold text-sky-700">
+        Как это работает
+      </h2>
+
+      <ol className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {STEPS.map((s, i) => (
+          <li
+            key={s.title}
+            className="relative rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
+          >
+            <div className="mb-2 inline-flex h-8 w-8 items-center justify-center rounded-full bg-sky-600 text-sm font-bold text-white">
+              {i + 1}
+            </div>
+            <div className="text-base font-semibold">{s.title}</div>
+            <div className="mt-1 text-sm text-slate-600">{s.text}</div>
+          </li>
+        ))}
+      </ol>
     </section>
   );
 }

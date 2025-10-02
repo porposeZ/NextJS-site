@@ -1,96 +1,47 @@
-import Image from "next/image";
+import RevealOnScroll from "~/components/reveal/RevealOnScroll";
+import { Card } from "~/components/ui/card";
 
-export const metadata = {
-  title: "О нас",
-};
+export const metadata = { title: "О нас" };
 
-type Feature = {
-  title: string;
-  image: string;
-  imageSide?: "left" | "right";
-};
-
-const features: Feature[] = [
+const ITEMS = [
   {
-    title: "Мы тщательно отбираем исполнителей",
-    image: "/about/hero-1.png",
-    imageSide: "left",
+    title: "Тщательный отбор исполнителей",
+    text: "Каждый кандидат проходит ручную модерацию, собеседование и проверку документов.",
   },
   {
-    title: "Ответственно относимся к каждой задаче",
-    image: "/about/hero-2.png",
-    imageSide: "right",
+    title: "Поддержка и контроль",
+    text: "Персональный менеджер сопровождает ваш заказ и контролирует сроки на каждом этапе.",
   },
   {
-    title: "Служим для удобства связи людей",
-    image: "/about/hero-3.png",
-    imageSide: "left",
+    title: "Безопасные платежи",
+    text: "Оплачивайте удобным способом. Чеки и закрывающие документы по запросу.",
   },
   {
-    title: "Найдем исполнителя в любом городе",
-    image: "/about/hero-4.png",
-    imageSide: "right",
+    title: "Прозрачные условия",
+    text: "Стоимость согласуется заранее — без скрытых платежей и навязанных услуг.",
   },
 ];
 
 export default function AboutPage() {
   return (
-    <div className="relative">
-      {/* фоновые круги */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 -z-10 overflow-hidden"
-      >
-        <div className="absolute -top-24 -left-24 h-96 w-96 rounded-full bg-sky-100" />
-        <div className="absolute -right-32 top-10 h-[28rem] w-[28rem] rounded-full bg-sky-100" />
-        <div className="absolute -left-40 top-[38rem] h-[30rem] w-[30rem] rounded-full bg-sky-100" />
-        <div className="absolute -right-44 top-[68rem] h-[26rem] w-[26rem] rounded-full bg-sky-100" />
-      </div>
+    <div className="space-y-8">
+      <h1 className="text-2xl font-extrabold text-sky-700">О нас</h1>
 
-      <h1 className="mb-8 text-center text-3xl font-extrabold text-sky-700 md:text-4xl">
-        О нас
-      </h1>
-
-      <div className="space-y-6">
-        {features.map((f, i) => (
-          <FeatureCard key={i} {...f} />
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {ITEMS.map((it, i) => (
+          <RevealOnScroll key={it.title} delay={i * 120}>
+            <Card className="h-full rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+              <div className="text-base font-semibold">{it.title}</div>
+              <div className="mt-1 text-sm text-slate-600">{it.text}</div>
+            </Card>
+          </RevealOnScroll>
         ))}
       </div>
 
-      {/* Желтая полоса снизу */}
-      <p className="mt-8 rounded-md bg-yellow-300 px-4 py-3 text-center text-sm font-semibold text-slate-900">
-        У нас отличная поддержка, но вы с ней никогда не встретитесь!
+      <p className="text-sm text-slate-600">
+        Мы ежедневно помогаем людям и компаниям решать задачи в разных городах России —
+        быстро, безопасно и по справедливой цене.
       </p>
     </div>
-  );
-}
-
-function FeatureCard({ title, image, imageSide = "left" }: Feature) {
-  const img = (
-    <div className="flex h-20 w-20 items-center justify-center rounded-full overflow-hidden bg-white ring-1 ring-sky-200 shadow-sm md:h-24 md:w-24">
-      <Image
-        src={image}
-        alt=""
-        width={96}
-        height={96}
-        className="h-full w-full object-cover"
-        aria-hidden
-      />
-    </div>
-  );
-
-  return (
-    <article className="rounded-2xl border bg-white/90 p-4 shadow-sm md:p-6">
-      <div
-        className={`flex items-center gap-4 md:gap-6 ${
-          imageSide === "right" ? "flex-row-reverse" : ""
-        }`}
-      >
-        {img}
-        <h3 className="text-lg font-semibold leading-snug text-slate-800 md:text-xl">
-          {title}
-        </h3>
-      </div>
-    </article>
   );
 }

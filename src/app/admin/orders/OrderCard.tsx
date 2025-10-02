@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { Card } from "~/components/ui/card";
 import { Button } from "~/components/ui/button";
 import { updateOrderStatus } from "../actions/updateOrderStatus";
+import StatusBadge from "~/components/StatusBadge";
 
 type Order = {
   id: string;
@@ -13,21 +14,16 @@ type Order = {
   createdAt: string | Date;
   dueDate?: string | Date | null;
   user?: { email?: string | null; name?: string | null; phone?: string | null } | null;
-  events?: { id: string; message: string; createdAt: Date }[];
+  events?: { id: string; message: string; createdAt: string | Date }[];
 };
 
 const STATUSES = [
-  { v: "REVIEW", label: "Проверка" },
-  { v: "AWAITING_PAYMENT", label: "Ожидает оплаты" },
-  { v: "IN_PROGRESS", label: "В работе" },
-  { v: "DONE", label: "Выполнено" },
-  { v: "CANCELED", label: "Отменено" },
+  { v: "REVIEW", label: "REVIEW" },
+  { v: "AWAITING_PAYMENT", label: "AWAITING_PAYMENT" },
+  { v: "IN_PROGRESS", label: "IN_PROGRESS" },
+  { v: "DONE", label: "DONE" },
+  { v: "CANCELED", label: "CANCELED" },
 ] as const;
-
-function ruStatus(code: Order["status"]) {
-  const m = STATUSES.find((s) => s.v === code);
-  return m ? m.label : code;
-}
 
 export default function OrderCard({ order }: { order: Order }) {
   const [status, setStatus] = useState<Order["status"]>(order.status);
@@ -37,41 +33,51 @@ export default function OrderCard({ order }: { order: Order }) {
     const fd = new FormData();
     fd.set("id", order.id);
     fd.set("status", nextStatus);
-    await updateOrderStatus(fd); // у админа просто сохраняем, БЕЗ модалки
+    await updateOrderStatus(fd);
   }
 
   return (
-    <Card className="p-4 relative">
-      <div className="flex items-start justify-between">
+    <Card className="relative p-4">
+      <div className="flex items-center justify-between gap-3">
         <div className="font-semibold">{order.city}</div>
-        <span className="rounded-full bg-sky-50 px-3 py-1 text-xs font-semibold leading-tight text-sky-700 text-right">
-          {ruStatus(order.status)}
-          <span className="block text-[10px] uppercase opacity-70">{order.status}</span>
-        </span>
+        <StatusBadge status={order.status} />
       </div>
 
-      <div className="mt-2 text-sm whitespace-pre-wrap">{order.description}</div>
+      <div className="mt-2 whitespace-pre-wrap text-sm">{order.description}</div>
 
       <div className="mt-3 grid gap-1 text-xs text-slate-600">
         <div>
           <b>Пользователь:</b> {order.user?.email ?? "—"}
           {order.user?.name ? ` (${order.user.name})` : ""}
         </div>
-        <div><b>Телефон:</b> {order.user?.phone ?? "—"}</div>
-        <div><b>Создано:</b> {new Date(order.createdAt).toLocaleString()}</div>
-        {order.dueDate && <div><b>К исполнению:</b> {new Date(order.dueDate).toLocaleDateString()}</div>}
-        <div><b>ID:</b> {order.id}</div>
+        <div>
+          <b>Телефон:</b> {order.user?.phone ?? "—"}
+        </div>
+        <div>
+          <b>Создано:</b>{" "}
+          {new Date(order.createdAt).toLocaleString()}
+        </div>
+        {order.dueDate && (
+          <div>
+            <b>К исполнению:</b>{" "}
+            {new Date(order.dueDate).toLocaleDateString()}
+          </div>
+        )}
+        <div>
+          <b>ID:</b> {order.id}
+        </div>
       </div>
 
-      {/* История показываем в админке */}
       {order.events && order.events.length > 0 && (
-        <div className="mt-4 rounded-md bg-slate-50 p-3 text-xs text-slate-600">
-          <div className="mb-1 font-medium text-slate-700">История</div>
-          {order.events.map((e) => (
-            <div key={e.id}>
-              {new Date(e.createdAt).toLocaleString()} — {e.message}
-            </div>
-          ))}
+        <div className="mt-4 rounded-xl bg-slate-50 p-3 text-xs text-slate-600">
+          <div className="mb-1 font-semibold">История</div>
+          <ul className="space-y-1">
+            {order.events.map((e) => (
+              <li key={e.id}>
+                {new Date(e.createdAt).toLocaleString()} — {e.message}
+              </li>
+            ))}
+          </ul>
         </div>
       )}
 
@@ -83,7 +89,7 @@ export default function OrderCard({ order }: { order: Order }) {
         >
           {STATUSES.map((s) => (
             <option key={s.v} value={s.v}>
-              {s.label} — {s.v}
+              {s.label}
             </option>
           ))}
         </select>
