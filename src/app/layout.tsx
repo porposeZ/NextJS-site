@@ -3,6 +3,7 @@ import Link from "next/link";
 import { auth } from "~/server/auth";
 import { Button } from "~/components/ui/button";
 import Footer from "~/components/Footer";
+import "../styles/globals.css";
 
 export const metadata: Metadata = {
   title: { default: "Я есть", template: "%s — Я есть" },
