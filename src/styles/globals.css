@@ -123,3 +123,7 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* скрыть горизонтальный скроллбар у карусели услуг */
+.hide-scrollbar { scrollbar-width: none; }
+.hide-scrollbar::-webkit-scrollbar { display: none; }

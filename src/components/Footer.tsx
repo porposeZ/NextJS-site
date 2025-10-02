@@ -1,18 +1,21 @@
 export default function Footer() {
   return (
-    <footer className="mt-16 border-t bg-white">
-      <div className="mx-auto flex max-w-6xl flex-col gap-3 px-4 py-6 text-xs text-slate-500 md:flex-row md:items-start md:justify-between">
-        <div>
-          <div className="font-black text-sky-700">Я есть</div>
-          <div>Поручения и небольшие задачи</div>
-        </div>
-
-        <div className="grid gap-1 leading-5">
+    <footer className="mt-10 border-t bg-white">
+      <div className="mx-auto max-w-6xl px-4 py-6 text-xs leading-relaxed text-slate-600">
+        <div className="flex flex-col gap-1 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-6">
           <div>ИП Вогоровский Максим Михайлович</div>
-          <div>ИНН 244316923490 · ОГРН 320246800081987</div>
+          <div className="hidden sm:block">•</div>
+          <div>ИНН 244316923490</div>
+          <div className="hidden sm:block">•</div>
+          <div>ОГРН 320246800081987</div>
+          <div className="hidden sm:block">•</div>
           <div>660100, Россия, Красноярский край, г. Красноярск</div>
-          <div>БИК 044525974 · <a href="mailto:info@yayestcorp.ru" className="hover:text-sky-700">info@yayestcorp.ru</a></div>
-          <div className="text-[10px] text-slate-400">© {new Date().getFullYear()} Я есть</div>
+          <div className="hidden sm:block">•</div>
+          <div>БИК 044525974</div>
+          <div className="hidden sm:block">•</div>
+          <a href="mailto:info@yayestcorp.ru" className="hover:text-slate-900">
+            info@yayestcorp.ru
+          </a>
         </div>
       </div>
     </footer>
