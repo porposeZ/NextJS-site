@@ -1,135 +1,100 @@
-"use client";
-
+// src/app/page.tsx
+import { auth } from "~/server/auth";
+import { db } from "~/server/db";
+import ServicesStrip from "~/components/ServicesStrip";
 import Steps from "~/components/Steps";
-import StatsBar from "~/components/home/StatsBar";
-import Features from "~/components/home/Features";
-import ServicesCarousel from "~/components/home/ServicesCarousel";
+import HomeForm from "./HomeForm"; // 👈 клиентская форма в отдельном файле
 
-import { Card } from "~/components/ui/card";
-import { Button } from "~/components/ui/button";
-import { Input } from "~/components/ui/input";
-import { Textarea } from "~/components/ui/textarea";
-import { Label } from "~/components/ui/label";
+export const metadata = { title: "Я есть — поручения в любом городе" };
 
-import { useForm } from "react-hook-form";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
-import { createOrder, type CreateOrderResult } from "./actions/createOrder";
+export default async function HomePage() {
+  const session = await auth();
 
-type FormData = {
-  fio: string;
-  phone: string;
-  email: string;
-  city: string;
-  date: string; // YYYY-MM-DD
-  details: string;
-};
+  let defaultEmail: string | undefined = session?.user?.email ?? undefined;
+  let defaultPhone: string | undefined = undefined;
 
-export default function HomePage() {
-  const { register, handleSubmit, reset } = useForm<FormData>();
-  const router = useRouter();
-  const [loading, setLoading] = useState(false);
-
-  async function onSubmit(data: FormData) {
-    setLoading(true);
-    try {
-      const res: CreateOrderResult = await createOrder({
-        city: data.city,
-        details: data.details,
-        date: data.date || undefined,
-      });
-
-      if (!res.ok) {
-        if (res.error === "NOT_AUTHENTICATED") {
-          router.push("/auth/signin?callbackUrl=/");
-          return;
-        }
-        alert("Проверьте поля формы");
-        return;
-      }
-
-      reset();
-      router.push("/orders");
-    } finally {
-      setLoading(false);
-    }
+  if (session?.user?.id) {
+    const u = await db.user.findUnique({
+      where: { id: session.user.id },
+      select: { phone: true },
+    });
+    defaultPhone = u?.phone ?? undefined;
   }
 
   return (
-    <div className="space-y-10">
-      <h1 className="text-center text-3xl font-extrabold text-sky-700">
-        Ваши руки в каждом городе
-      </h1>
+    <div className="space-y-12">
+      {/* Форма */}
+      <section className="mx-auto max-w-4xl">
+        <HomeForm defaultEmail={defaultEmail} defaultPhone={defaultPhone} />
+      </section>
 
-      {/* Форма создания заказа */}
-      <Card className="mx-auto max-w-4xl p-6">
-        <form className="grid grid-cols-1 gap-4 md:grid-cols-2" onSubmit={handleSubmit(onSubmit)}>
-          <div className="md:col-span-2 flex gap-6 text-sm">
-            <label className="flex items-center gap-2">
-              <input type="radio" name="type" defaultChecked /> Для физических лиц
-            </label>
-            <label className="flex items-center gap-2">
-              <input type="radio" name="type" /> Для юридических лиц
-            </label>
+      {/* Счётчики */}
+      <section className="mx-auto grid max-w-4xl grid-cols-1 gap-4 sm:grid-cols-2">
+        <div className="rounded-2xl bg-white p-5 text-center shadow-sm ring-1 ring-slate-200">
+          <div className="text-3xl font-extrabold text-sky-700">9 000+</div>
+          <div className="mt-1 text-sm text-slate-600">
+            исполнителей готовы помочь
           </div>
+        </div>
+        <div className="rounded-2xl bg-white p-5 text-center shadow-sm ring-1 ring-slate-200">
+          <div className="text-3xl font-extrabold text-sky-700">18 523</div>
+          <div className="mt-1 text-sm text-slate-600">выполненных заказа</div>
+        </div>
+      </section>
 
-          <div>
-            <Label className="mb-1 inline-block">ФИО</Label>
-            <Input {...register("fio")} placeholder="Иванов Иван" />
-          </div>
+      {/* 4 инфо-блока */}
+      <section className="space-y-4">
+        <h2 className="text-center text-2xl font-extrabold text-sky-700">
+          Почему с нами удобно
+        </h2>
 
-          <div>
-            <Label className="mb-1 inline-block">Электронная почта</Label>
-            <Input type="email" {...register("email")} placeholder="you@mail.ru" />
-          </div>
+        <div className="mx-auto grid max-w-6xl grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <InfoCard
+            title="Поддержка 24/7"
+            text="Мы всегда на связи: отвечаем быстро, помогаем найти решение и даём статус по заказу."
+          />
+          <InfoCard
+            title="Проверенные исполнители"
+            text="Каждый помощник проходит отбор: анкета, репутация, реальные задания. Оставляем только надёжных."
+          />
+          <InfoCard
+            title="Гарантия и скорость"
+            text="Назначаем менеджера, контролируем сроки и качество. Если что-то идёт не так — подменим исполнителя."
+          />
+          <InfoCard
+            title="Справедливые цены"
+            text="Фиксируем стоимость до начала работ и показываем, из чего она состоит. Без скрытых платежей."
+          />
+        </div>
+      </section>
 
-          <div>
-            <Label className="mb-1 inline-block">Номер телефона</Label>
-            <Input {...register("phone")} placeholder="+7 999 123-45-67" />
-          </div>
+      {/* Как это работает */}
+      <section className="space-y-4">
+        <h2 className="text-center text-2xl font-extrabold text-sky-700">
+          Как это работает
+        </h2>
+        <div className="mx-auto max-w-5xl">
+          <Steps />
+        </div>
+      </section>
 
-          <div>
-            <Label className="mb-1 inline-block">Город</Label>
-            <Input {...register("city", { required: true })} placeholder="Москва" />
-          </div>
+      {/* Полоса услуг */}
+      <section className="space-y-4">
+        <h2 className="text-center text-2xl font-extrabold text-sky-700">
+          Выполняем весь спектр услуг для физических и юридических лиц
+          <br />в разных городах России
+        </h2>
+        <ServicesStrip />
+      </section>
+    </div>
+  );
+}
 
-          <div>
-            <Label className="mb-1 inline-block">Дата исполнения</Label>
-            <Input type="date" {...register("date", { required: true })} />
-          </div>
-
-          <div className="md:col-span-2">
-            <Label className="mb-1 inline-block">Задача / подробности</Label>
-            <Textarea
-              rows={5}
-              {...register("details", { required: true })}
-              placeholder="Что нужно сделать поручителю?"
-            />
-          </div>
-
-          <div className="md:col-span-2">
-            <Button
-              type="submit"
-              className="bg-orange-500 hover:bg-orange-600"
-              disabled={loading}
-            >
-              {loading ? "Отправляем..." : "Создать заказ"}
-            </Button>
-          </div>
-        </form>
-      </Card>
-
-      {/* Метрики под формой */}
-      <StatsBar />
-
-      {/* Преимущества */}
-      <Features />
-
-      {/* Как это работает (без «отчёта») */}
-      <Steps />
-
-      {/* Горизонтальный список услуг */}
-      <ServicesCarousel />
+function InfoCard({ title, text }: { title: string; text: string }) {
+  return (
+    <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
+      <div className="text-base font-semibold">{title}</div>
+      <p className="mt-2 text-sm text-slate-600">{text}</p>
     </div>
   );
 }

@@ -1,47 +1,72 @@
-import RevealOnScroll from "~/components/reveal/RevealOnScroll";
-import { Card } from "~/components/ui/card";
+import Image from "next/image";
 
 export const metadata = { title: "О нас" };
 
-const ITEMS = [
+type Block = {
+  title: string;
+  text: string;
+  img: string;
+  right?: boolean;
+};
+
+const blocks: Block[] = [
   {
-    title: "Тщательный отбор исполнителей",
-    text: "Каждый кандидат проходит ручную модерацию, собеседование и проверку документов.",
+    title: "Мы тщательно отбираем исполнителей",
+    text: "Каждый исполнитель проходит проверку: репутация, анкета, опыт. Оставляем только тех, кому доверили бы своё поручение.",
+    img: "/about/hero-1.png",
   },
   {
-    title: "Поддержка и контроль",
-    text: "Персональный менеджер сопровождает ваш заказ и контролирует сроки на каждом этапе.",
+    title: "Ответственно относимся к каждой задаче",
+    text: "Назначаем к заказу менеджера, следим за сроками и качеством. Пишем вам, когда есть новости.",
+    img: "/about/hero-2.png",
+    right: true,
   },
   {
-    title: "Безопасные платежи",
-    text: "Оплачивайте удобным способом. Чеки и закрывающие документы по запросу.",
+    title: "Служим для удобства связи людей",
+    text: "Помогаем там, где вас нет: купить, забрать, привезти, проверить. Всё прозрачно и без лишней волокиты.",
+    img: "/about/hero-3.png",
   },
   {
-    title: "Прозрачные условия",
-    text: "Стоимость согласуется заранее — без скрытых платежей и навязанных услуг.",
+    title: "Найдём исполнителя в любом городе",
+    text: "Работаем по всей России. Подключаем локальных помощников и берём организацию на себя.",
+    img: "/about/hero-4.png",
+    right: true,
   },
 ];
 
 export default function AboutPage() {
   return (
-    <div className="space-y-8">
-      <h1 className="text-2xl font-extrabold text-sky-700">О нас</h1>
+    <div className="space-y-6">
+      <h1 className="text-center text-3xl font-extrabold text-sky-700">О нас</h1>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {ITEMS.map((it, i) => (
-          <RevealOnScroll key={it.title} delay={i * 120}>
-            <Card className="h-full rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-              <div className="text-base font-semibold">{it.title}</div>
-              <div className="mt-1 text-sm text-slate-600">{it.text}</div>
-            </Card>
-          </RevealOnScroll>
+      <div className="space-y-6">
+        {blocks.map((b, i) => (
+          <section
+            key={i}
+            className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-200"
+          >
+            <div className={`grid items-center gap-6 p-5 md:grid-cols-2 md:p-8 ${b.right ? "md:[&>*:first-child]:order-2" : ""}`}>
+              <Image
+                src={b.img}
+                alt=""
+                width={1200}
+                height={600}
+                className="h-auto w-full rounded-xl"
+                priority={i === 0}
+              />
+              <div>
+                <h2 className="text-xl font-semibold">{b.title}</h2>
+                <p className="mt-3 text-slate-600">{b.text}</p>
+              </div>
+            </div>
+          </section>
         ))}
       </div>
 
-      <p className="text-sm text-slate-600">
-        Мы ежедневно помогаем людям и компаниям решать задачи в разных городах России —
-        быстро, безопасно и по справедливой цене.
-      </p>
+      {/* Жёлтая лента */}
+      <div className="rounded-xl bg-yellow-400 px-4 py-3 text-center text-sm font-medium text-slate-900 shadow-sm">
+        У нас отличная поддержка, но вы с ней никогда не встретитесь!
+      </div>
     </div>
   );
 }
