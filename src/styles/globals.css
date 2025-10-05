@@ -127,3 +127,22 @@
 /* скрыть горизонтальный скроллбар у карусели услуг */
 .hide-scrollbar { scrollbar-width: none; }
 .hide-scrollbar::-webkit-scrollbar { display: none; }
+
+/* === About ribbon marquee === */
+.marquee {
+  overflow: hidden;
+}
+.marquee-track {
+  animation: ribbon-left 30s linear infinite;
+}
+.marquee-paused:hover .marquee-track {
+  animation-play-state: paused;
+}
+@keyframes ribbon-left {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
