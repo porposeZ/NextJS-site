@@ -62,7 +62,7 @@ export default function Steps() {
       </ol>
 
       {/* Нижний ряд — 2 карточки строго по центру */}
-      <ol className="mt-6 flex flex-wrap justify-center gap-6">
+      <ol className="mt-6 flex flex-wrap justify-center gap-18">
         {STEPS.slice(3, 5).map((s, i) => {
           const { url, pos } = safeBg(i + 3);
           return (
@@ -95,7 +95,7 @@ function StepCard({
   bgPos: string;
 }) {
   return (
-    <li className="relative w-[320px] overflow-hidden rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:shadow-md">
+    <li className="relative w-[260px] overflow-hidden rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:shadow-md">
       {/* Фон заполняет блок, без зазоров по углам */}
       <div
         aria-hidden

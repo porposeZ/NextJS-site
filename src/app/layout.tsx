@@ -73,18 +73,37 @@ export default async function RootLayout({
 
     {/* Контакты — закреплены справа за пределами сетки */}
     <div className="absolute right-[-180px] top-1/2 -translate-y-1/2 flex flex-col items-start gap-1 text-xs leading-tight text-slate-700">
-      <a
-        href="mailto:info@yayestcorp.ru"
-        className="font-medium text-slate-900 hover:text-sky-700"
-      >
-        info@yayestcorp.ru
-      </a>
-      <a href="tel:3912162584" className="hover:text-sky-700">
-        3912162584
-      </a>
-      <a href="tel:+79233118858" className="hover:text-sky-700">
-        +7 923 311 8858
-      </a>
+<ul className="space-y-1.5">
+              <li>
+                <a
+                  href="mailto:info@yayestcorp.ru"
+                  className="group flex items-center gap-2 font-medium text-slate-800 transition-colors hover:text-sky-700"
+                >
+                  <MailIcon className="h-4 w-4 text-slate-400 group-hover:text-sky-600" />
+                  <span>info@yayestcorp.ru</span>
+                </a>
+              </li>
+
+              <li>
+                <a
+                  href="tel:3912162584"
+                  className="group flex items-center gap-2 font-medium text-slate-800 transition-colors hover:text-sky-700"
+                >
+                  <PhoneIcon className="h-4 w-4 text-slate-400 group-hover:text-sky-600" />
+                  <span>+7 391 216-25-84</span>
+                </a>
+              </li>
+
+              <li>
+                <a
+                  href="tel:+79233118858"
+                  className="group flex items-center gap-2 font-medium text-slate-800 transition-colors hover:text-sky-700"
+                >
+                  <PhoneIcon className="h-4 w-4 text-slate-400 group-hover:text-sky-600" />
+                  <span>+7 923 311-88-58</span>
+                </a>
+              </li>
+            </ul>
     </div>
   </nav>
 </header>
@@ -116,5 +135,33 @@ export default async function RootLayout({
         <Footer />
       </body>
     </html>
+  );
+}
+
+function MailIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" {...props}>
+      <path
+        d="M5 7h14a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1Zm0 0 7 5 7-5"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function PhoneIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" {...props}>
+      <path
+        d="M6.5 3h3l1.5 4-2 1.5a12 12 0 0 0 6.5 6.5L17 13.5l4 1.5v3a2 2 0 0 1-2.2 2A16 16 0 0 1 3 6.2 2 2 0 0 1 5 4Z"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
   );
 }

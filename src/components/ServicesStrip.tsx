@@ -13,6 +13,7 @@ const services = [
   "Проверим",
   "Проконтролируем",
   "Сопроводим",
+  "Сфотографируем",
 ];
 
 // Позиции картинки по вертикали
@@ -55,9 +56,10 @@ export default function ServicesStrip() {
                 />
 
                 {/* Нижняя подпись */}
-                <div className="absolute inset-x-0 bottom-0 z-10 bg-white/85 backdrop-blur px-5 py-2 text-[15px] font-semibold text-slate-900 shadow-[0_-8px_16px_-12px_rgba(0,0,0,0.2)]">
-                  {title}
-                </div>
+<div className="absolute inset-x-0 bottom-0 z-10 bg-white/85 backdrop-blur px-5 py-2 text-[15px] font-semibold text-slate-900 text-center shadow-[0_-8px_16px_-12px_rgba(0,0,0,0.2)]">
+  {title}
+</div>
+
               </div>
             );
           })}

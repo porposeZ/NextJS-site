@@ -98,7 +98,7 @@ export default async function HomePage() {
       {/* Полоса услуг */}
       <section className="space-y-4">
         <h2 className="text-center text-2xl font-extrabold text-sky-700">
-          Выполняем весь спектр услуг для физических и юридических лиц
+          Выполняем полный спектр услуг для физических и юридических лиц
           <br />
           в разных городах России
         </h2>
