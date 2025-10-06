@@ -8,10 +8,7 @@ import { revalidatePath } from "next/cache";
 const Input = z.object({
   name: z.string().trim().min(2).max(80),
   phone: z.string().optional().transform((v) => (v ?? "").trim()),
-  image: z.string().trim().url().optional().or(z.literal("")),
   defaultCity: z.string().trim().max(120).optional().or(z.literal("")),
-  notifyOnStatusChange: z.boolean().optional().default(true),
-  notifyOnPayment: z.boolean().optional().default(true),
 });
 
 export type UpdateProfileResult =
@@ -29,8 +26,7 @@ export async function updateProfile(raw: unknown): Promise<UpdateProfileResult> 
   const parsed = Input.safeParse(raw);
   if (!parsed.success) return { ok: false, error: "VALIDATION_ERROR" };
 
-  const { name, phone: rawPhone, image, defaultCity, notifyOnStatusChange, notifyOnPayment } =
-    parsed.data;
+  const { name, phone: rawPhone, defaultCity } = parsed.data;
 
   const digits = (rawPhone ?? "").replace(/\D/g, "");
   const phone = digits.length ? `+${digits}` : null;
@@ -41,10 +37,7 @@ export async function updateProfile(raw: unknown): Promise<UpdateProfileResult> 
       data: {
         name,
         phone,
-        image: image || null,
         defaultCity: defaultCity || null,
-        notifyOnStatusChange: !!notifyOnStatusChange,
-        notifyOnPayment: !!notifyOnPayment,
       },
     });
 

@@ -17,10 +17,7 @@ export default async function ProfilePage() {
         name: true,
         email: true,
         phone: true,
-        image: true,
         defaultCity: true,
-        notifyOnStatusChange: true,
-        notifyOnPayment: true,
       },
     }),
     db.session.count({ where: { userId: session.user.id } }),
@@ -31,41 +28,18 @@ export default async function ProfilePage() {
       <h1 className="text-2xl font-bold text-sky-700">Личный кабинет</h1>
 
       <Card className="p-6">
-        <div className="mb-6 flex items-center gap-4">
-          <img
-            src={user?.image || `https://www.gravatar.com/avatar/?d=identicon`}
-            alt="Avatar"
-            className="h-12 w-12 rounded-full bg-slate-200 object-cover"
-          />
-          <div className="text-sm text-slate-600">
-            Почта (логин): <b>{user?.email ?? "—"}</b>
-            <div className="text-xs text-slate-500">Активных сессий: {sessions}</div>
-          </div>
+        <div className="mb-6 text-sm text-slate-600">
+          Почта (логин): <b>{user?.email ?? "—"}</b>
+          <div className="text-xs text-slate-500">Активных сессий: {sessions}</div>
         </div>
 
         <ProfileForm
           initial={{
             name: user?.name ?? "",
             phone: user?.phone ?? "",
-            image: user?.image ?? "",
             defaultCity: user?.defaultCity ?? "",
-            notifyOnStatusChange: user?.notifyOnStatusChange ?? true,
-            notifyOnPayment: user?.notifyOnPayment ?? true,
           }}
         />
-      </Card>
-
-      <Card className="p-6">
-        <h2 className="mb-2 text-lg font-semibold">Данные</h2>
-        <p className="text-sm text-slate-600">
-          Вы можете скачать все свои данные (профиль, заказы, история событий) в формате JSON.
-        </p>
-        <a
-          href="/profile/export"
-          className="mt-3 inline-block rounded bg-sky-600 px-3 py-2 text-sm text-white hover:bg-sky-700"
-        >
-          Выгрузить мои данные (JSON)
-        </a>
       </Card>
     </div>
   );
