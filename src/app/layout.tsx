@@ -3,6 +3,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { auth } from "~/server/auth";
 import { Button } from "~/components/ui/button";
+import SignOutButton from "~/components/SignOutButton";
 import Footer from "~/components/Footer";
 import "../styles/globals.css";
 
@@ -53,11 +54,7 @@ export default async function RootLayout({
           <span className="hidden text-xs text-slate-500 md:inline">
             {session.user.email}
           </span>
-          <form action="/api/auth/signout" method="post">
-            <Button size="sm" variant="secondary">
-              Выйти
-            </Button>
-          </form>
+<SignOutButton />
         </>
       ) : (
         <Link href="/auth/signin">
