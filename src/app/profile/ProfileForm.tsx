@@ -11,6 +11,7 @@ type FormData = {
   name: string;
   phone: string;
   defaultCity: string;
+  organization: string;
 };
 
 export default function ProfileForm({ initial }: { initial: FormData }) {
@@ -83,7 +84,20 @@ export default function ProfileForm({ initial }: { initial: FormData }) {
 
       <div>
         <Label>Город по умолчанию</Label>
-        <Input {...register("defaultCity")} placeholder="Например, Москва" />
+        <Input {...register("defaultCity")} placeholder="Например, Красноярск" />
+      </div>
+
+      <div>
+        <Label>Организация</Label>
+        <Input
+          {...register("organization", {
+            maxLength: { value: 120, message: "Слишком длинно" },
+          })}
+          placeholder="ООО «Яесть»"
+        />
+        {errors.organization && (
+          <p className="mt-1 text-xs text-red-600">{errors.organization.message}</p>
+        )}
       </div>
 
       <div className="flex gap-2">

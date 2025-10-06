@@ -3,6 +3,7 @@ import { auth } from "~/server/auth";
 import { db } from "~/server/db";
 import { Card } from "~/components/ui/card";
 import ProfileForm from "./ProfileForm";
+import EmailSection from "./email/EmailSection";
 
 export const metadata = { title: "Личный кабинет" };
 
@@ -18,6 +19,7 @@ export default async function ProfilePage() {
         email: true,
         phone: true,
         defaultCity: true,
+        organization: true,
       },
     }),
     db.session.count({ where: { userId: session.user.id } }),
@@ -33,14 +35,19 @@ export default async function ProfilePage() {
           <div className="text-xs text-slate-500">Активных сессий: {sessions}</div>
         </div>
 
+        {/* Основные поля профиля */}
         <ProfileForm
           initial={{
             name: user?.name ?? "",
             phone: user?.phone ?? "",
             defaultCity: user?.defaultCity ?? "",
+            organization: user?.organization ?? "",
           }}
         />
       </Card>
+
+      {/* Отдельная секция смены email */}
+      <EmailSection currentEmail={user?.email ?? ""} />
     </div>
   );
 }

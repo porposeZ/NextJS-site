@@ -60,11 +60,15 @@ model User {
   notifyOnStatusChange   Boolean  @default(true)
   notifyOnPayment        Boolean  @default(true)
 
+  organization           String?     // <- организация
+
   accounts      Account[]
   sessions      Session[]
   posts         Post[]
   orders        Order[]
   events        OrderEvent[]
+
+  emailChangeTokens EmailChangeToken[]
 }
 
 model VerificationToken {
@@ -134,4 +138,18 @@ model ActionLog {
   key       String
   createdAt DateTime @default(now())
   @@index([key, createdAt])
+}
+
+model EmailChangeToken {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  newEmail  String
+  token     String   @unique
+  expires   DateTime
+
+  createdAt DateTime @default(now())
+
+  @@index([userId, expires])
 }

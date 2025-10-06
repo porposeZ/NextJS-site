@@ -9,6 +9,7 @@ const Input = z.object({
   name: z.string().trim().min(2).max(80),
   phone: z.string().optional().transform((v) => (v ?? "").trim()),
   defaultCity: z.string().trim().max(120).optional().or(z.literal("")),
+  organization: z.string().trim().max(120).optional().or(z.literal("")),
 });
 
 export type UpdateProfileResult =
@@ -26,7 +27,7 @@ export async function updateProfile(raw: unknown): Promise<UpdateProfileResult> 
   const parsed = Input.safeParse(raw);
   if (!parsed.success) return { ok: false, error: "VALIDATION_ERROR" };
 
-  const { name, phone: rawPhone, defaultCity } = parsed.data;
+  const { name, phone: rawPhone, defaultCity, organization } = parsed.data;
 
   const digits = (rawPhone ?? "").replace(/\D/g, "");
   const phone = digits.length ? `+${digits}` : null;
@@ -38,6 +39,7 @@ export async function updateProfile(raw: unknown): Promise<UpdateProfileResult> 
         name,
         phone,
         defaultCity: defaultCity || null,
+        organization: organization || null,
       },
     });
 
