@@ -3,22 +3,41 @@ import { auth } from "~/server/auth";
 import { db } from "~/server/db";
 import ServicesStrip from "~/components/ServicesStrip";
 import Steps from "~/components/Steps";
-import HomeForm from "./HomeForm"; // клиентская форма
+import HomeForm from "./HomeForm";
 
 export const metadata = { title: "Я есть — поручения в любом городе" };
 
 export default async function HomePage() {
   const session = await auth();
 
-  let defaultEmail: string | undefined = session?.user?.email ?? undefined;
-  let defaultPhone: string | undefined = undefined;
+  let defaults = {
+    email: session?.user?.email ?? "",
+    phone: "",
+    name: "",
+    city: "",
+    organization: "",
+    personType: "individual" as "individual" | "company",
+  };
 
   if (session?.user?.id) {
     const u = await db.user.findUnique({
       where: { id: session.user.id },
-      select: { phone: true },
+      select: {
+        phone: true,
+        name: true,
+        defaultCity: true,
+        organization: true,
+      },
     });
-    defaultPhone = u?.phone ?? undefined;
+
+    defaults = {
+      email: session.user.email ?? "",
+      phone: u?.phone ?? "",
+      name: u?.name ?? "",
+      city: u?.defaultCity ?? "",
+      organization: u?.organization ?? "",
+      personType: u?.organization ? "company" : "individual",
+    };
   }
 
   return (
@@ -32,12 +51,18 @@ export default async function HomePage() {
 
       {/* Форма */}
       <section className="mx-auto max-w-4xl">
-        <HomeForm defaultEmail={defaultEmail} defaultPhone={defaultPhone} />
+        <HomeForm
+          defaultEmail={defaults.email}
+          defaultPhone={defaults.phone}
+          defaultName={defaults.name}
+          defaultCity={defaults.city}
+          defaultOrganization={defaults.organization}
+          defaultPersonType={defaults.personType}
+        />
       </section>
 
       {/* Счётчики */}
       <section className="mx-auto grid max-w-4xl grid-cols-1 gap-4 sm:grid-cols-2">
-        {/* 1 */}
         <div className="rounded-2xl bg-white p-5 text-center shadow-sm ring-1 ring-slate-200">
           <div className="flex items-center justify-center gap-3">
             <CheckIcon />
@@ -48,7 +73,6 @@ export default async function HomePage() {
           </div>
         </div>
 
-        {/* 2 */}
         <div className="rounded-2xl bg-white p-5 text-center shadow-sm ring-1 ring-slate-200">
           <div className="flex items-center justify-center gap-3">
             <CheckIcon />
@@ -97,7 +121,7 @@ export default async function HomePage() {
 
       {/* Полоса услуг */}
       <section className="space-y-4">
-        <h2 className="text-center text-2xl font-extrabold text-sky-700">
+        <h2 className="text-center text-2xl font-extrabолd text-sky-700">
           Выполняем полный спектр услуг для физических и юридических лиц
           <br />
           в разных городах России
@@ -108,12 +132,6 @@ export default async function HomePage() {
   );
 }
 
-/**
- * ЯРКИЕ фоны без затемнения.
- * Картинки лежат в public/InfoCard/info-1.png ... info-4.png
- * Для видимого рисунка задаём позицию каждого фона по углам
- * и даём небольшой масштаб, чтобы «пятна» попадали в карточку.
- */
 function InfoCard({
   title,
   text,
@@ -121,11 +139,9 @@ function InfoCard({
 }: {
   title: string;
   text: string;
-  bgIndex: number; // 1..4
+  bgIndex: number;
 }) {
   const bgUrl = `/InfoCard/info-${bgIndex}.png`;
-
-  // Позиции по углам для 1..4
   const positions = ["left top", "right top", "left bottom", "right bottom"] as const;
   const pos = positions[(bgIndex - 1) % positions.length];
 
@@ -145,17 +161,9 @@ function InfoCard({
   );
 }
 
-/** Зелёная галочка — иконка */
 function CheckIcon() {
   return (
-    <svg
-      width="28"
-      height="28"
-      viewBox="0 0 24 24"
-      fill="none"
-      aria-hidden="true"
-      className="shrink-0"
-    >
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden="true" className="shrink-0">
       <circle cx="12" cy="12" r="10" className="fill-emerald-500/15" />
       <path
         d="M7 12.5l3.2 3L17 8.5"

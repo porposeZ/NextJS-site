@@ -1,3 +1,4 @@
+// src/app/profile/ProfileForm.tsx
 "use client";
 
 import { useForm } from "react-hook-form";
@@ -6,6 +7,7 @@ import { Label } from "~/components/ui/label";
 import { Input } from "~/components/ui/input";
 import { Button } from "~/components/ui/button";
 import { updateProfile } from "./actions/updateProfile";
+import CityCombo from "~/components/CityCombo";
 
 type FormData = {
   name: string;
@@ -15,9 +17,12 @@ type FormData = {
 };
 
 export default function ProfileForm({ initial }: { initial: FormData }) {
-  const { register, handleSubmit, formState: { errors } } = useForm<FormData>({
-    defaultValues: initial,
-  });
+  const {
+    register,
+    handleSubmit,
+    control,
+    formState: { errors },
+  } = useForm<FormData>({ defaultValues: initial });
 
   const [isPending, startTransition] = useTransition();
   const [toast, setToast] = useState<{ type: "ok" | "err"; text: string }>();
@@ -56,7 +61,9 @@ export default function ProfileForm({ initial }: { initial: FormData }) {
       )}
 
       <div>
-        <Label>ФИО</Label>
+        <Label className="mb-1 block">
+          ФИО <span className="text-rose-500">*</span>
+        </Label>
         <Input
           {...register("name", {
             required: "Укажите ФИО",
@@ -65,30 +72,35 @@ export default function ProfileForm({ initial }: { initial: FormData }) {
           })}
           placeholder="Иванов Иван Иванович"
         />
-        {errors.name && <p className="mt-1 text-xs text-red-600">{errors.name.message}</p>}
+        {errors.name && <p className="mt-1 text-xs text-rose-600">{errors.name.message}</p>}
       </div>
 
       <div>
-        <Label>Телефон</Label>
+        <Label className="mb-1 block">
+          Телефон <span className="text-rose-500">*</span>
+        </Label>
         <Input
           {...register("phone", {
+            required: "Укажите номер",
             validate: (v) => {
               const digits = (v ?? "").replace(/\D/g, "");
-              return digits.length === 0 || digits.length >= 10 || "Некорректный номер";
+              return digits.length >= 10 || "Некорректный номер";
             },
           })}
           placeholder="+7 999 123-45-67"
         />
-        {errors.phone && <p className="mt-1 text-xs text-red-600">{errors.phone.message}</p>}
+        {errors.phone && <p className="mt-1 text-xs text-rose-600">{errors.phone.message}</p>}
       </div>
 
       <div>
-        <Label>Город по умолчанию</Label>
-        <Input {...register("defaultCity")} placeholder="Например, Красноярск" />
+        <Label className="mb-1 block">
+          Город по умолчанию <span className="text-rose-500">*</span>
+        </Label>
+        <CityCombo control={control} name="defaultCity" placeholder="Например, Красноярск" />
       </div>
 
       <div>
-        <Label>Организация</Label>
+        <Label className="mb-1 block">Организация</Label>
         <Input
           {...register("organization", {
             maxLength: { value: 120, message: "Слишком длинно" },
@@ -96,7 +108,7 @@ export default function ProfileForm({ initial }: { initial: FormData }) {
           placeholder="ООО «Яесть»"
         />
         {errors.organization && (
-          <p className="mt-1 text-xs text-red-600">{errors.organization.message}</p>
+          <p className="mt-1 text-xs text-rose-600">{errors.organization.message}</p>
         )}
       </div>
 

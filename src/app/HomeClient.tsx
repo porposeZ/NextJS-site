@@ -11,7 +11,7 @@ import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { createOrder } from "./actions/createOrder";
 import { isValidCity } from "~/lib/cities";
-import CityCombobox from "~/components/CityCombobox";
+import CityCombobox from "~/components/CityCombo";
 
 type FormData = {
   fio: string;
