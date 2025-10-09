@@ -71,7 +71,7 @@ export default function UserOrderCard({ order }: { order: Order }) {
       </div>
 
       {/* Описание */}
-      <div className="whitespace-pre-wrap text-sm leading-relaxed text-slate-800">
+      <div className="text-sm leading-relaxed whitespace-pre-wrap text-slate-800">
         {order.description}
       </div>
 

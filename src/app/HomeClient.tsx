@@ -35,13 +35,18 @@ function formatRuPhone(input: string) {
     p1 || p2 || p3 || p4
       ? `+7${p1 ? " " + p1 : ""}${p2 ? " " + p2 : ""}${p3 ? "-" + p3 : ""}${p4 ? "-" + p4 : ""}`
       : input.trim().startsWith("+")
-        ? input
-        : "";
+      ? input
+      : "";
   return { formatted, valid, digits: d };
 }
 
 export default function HomeClient(props: {
-  user?: { name: string | null; email: string | null; phone: string | null; defaultCity?: string | null };
+  user?: {
+    name: string | null;
+    email: string | null;
+    phone: string | null;
+    defaultCity?: string | null;
+  };
 }) {
   const { user } = props;
   const router = useRouter();
@@ -99,11 +104,13 @@ export default function HomeClient(props: {
     router.push("/orders");
   };
 
+  // Сообщения об ошибках — заранее сузим типы и уберём любые утверждения
+  const dateErrorMsg = errors.date?.message;
+  const detailsErrorMsg = errors.details?.message;
+
   return (
     <div className="space-y-10">
-      <h1 className="text-center text-3xl font-extrabold text-sky-700">
-        Ваши руки в каждом городе
-      </h1>
+      <h1 className="text-center text-3xl font-extrabold text-sky-700">Ваши руки в каждом городе</h1>
 
       {toast && (
         <div
@@ -119,7 +126,7 @@ export default function HomeClient(props: {
 
       <Card className="mx-auto max-w-4xl p-6">
         <form className="grid grid-cols-1 gap-4 md:grid-cols-2" onSubmit={handleSubmit(onSubmit)}>
-          <div className="md:col-span-2 flex gap-6 text-sm">
+          <div className="flex gap-6 text-sm md:col-span-2">
             <label className="flex items-center gap-2">
               <input type="radio" name="type" defaultChecked /> Для физических лиц
             </label>
@@ -149,9 +156,7 @@ export default function HomeClient(props: {
               {phone && !phoneState.valid ? (
                 <span className="text-red-600">Некорректный номер.</span>
               ) : (
-                <span className="text-slate-500">
-                  Подставляется из личного кабинета (если указан).
-                </span>
+                <span className="text-slate-500">Подставляется из личного кабинета (если указан).</span>
               )}
             </div>
           </div>
@@ -171,7 +176,7 @@ export default function HomeClient(props: {
           <div>
             <Label>Дата исполнения</Label>
             <Input type="date" {...register("date", { required: "Выберите дату исполнения" })} />
-            {errors.date && <p className="mt-1 text-xs text-red-600">{errors.date!.message}</p>}
+            {dateErrorMsg && <p className="mt-1 text-xs text-red-600">{dateErrorMsg}</p>}
           </div>
 
           <div className="md:col-span-2">
@@ -184,17 +189,11 @@ export default function HomeClient(props: {
               })}
               placeholder="Что нужно сделать поручителю?"
             />
-            {errors.details && (
-              <p className="mt-1 text-xs text-red-600">{errors.details!.message}</p>
-            )}
+            {detailsErrorMsg && <p className="mt-1 text-xs text-red-600">{detailsErrorMsg}</p>}
           </div>
 
           <div className="md:col-span-2">
-            <Button
-              type="submit"
-              className="bg-orange-500 hover:bg-orange-600"
-              disabled={isSubmitting}
-            >
+            <Button type="submit" className="bg-orange-500 hover:bg-orange-600" disabled={isSubmitting}>
               {isSubmitting ? "Отправляем..." : "Создать заказ"}
             </Button>
           </div>

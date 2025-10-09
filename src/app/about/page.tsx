@@ -35,8 +35,8 @@ const blocks: Block[] = [
 ];
 
 /** === ПАРАМЕТРЫ ДЛЯ ИГРЫ С ПРИЛИПАНИЕМ ЛЕНТЫ === */
-const RIBBON_OVERLAP_PX = 18;   // на сколько лента «выползает» из карточки вниз
-const RIBBON_HEIGHT = 56;       // высота жёлтой ленты (px)
+const RIBBON_OVERLAP_PX = 18; // на сколько лента «выползает» из карточки вниз
+const RIBBON_HEIGHT = 56; // высота жёлтой ленты (px)
 const LEGAL_BOTTOM_PADDING = 60; // нижний внутренний отступ в карточке, чтобы лента не наезжала на текст
 
 export default function AboutPage() {
@@ -48,15 +48,17 @@ export default function AboutPage() {
         backgroundAttachment: "fixed",
       }}
     >
-      <div className="mx-auto max-w-6xl px-4 py-10 space-y-8">
-        <h1 className="text-center text-3xl font-extrabold text-sky-700">О нас</h1>
+      <div className="mx-auto max-w-6xl space-y-8 px-4 py-10">
+        <h1 className="text-center text-3xl font-extrabold text-sky-700">
+          О нас
+        </h1>
 
         {/* Блоки с «человечками» */}
         <div className="space-y-6">
           {blocks.map((b, i) => (
             <section
               key={i}
-              className="overflow-hidden rounded-2xl bg-white/90 backdrop-blur-sm shadow-sm ring-1 ring-slate-200"
+              className="overflow-hidden rounded-2xl bg-white/90 shadow-sm ring-1 ring-slate-200 backdrop-blur-sm"
             >
               <div
                 className={`grid items-center gap-6 p-5 md:grid-cols-2 md:p-8 ${
@@ -91,7 +93,7 @@ export default function AboutPage() {
 
           {/* Лента, «приклеенная» к низу карточки, чуть выступает наружу */}
           <div
-            className="absolute left-0 right-0"
+            className="absolute right-0 left-0"
             style={{ bottom: -RIBBON_OVERLAP_PX }}
           >
             <YellowRibbon
@@ -133,7 +135,7 @@ function LegalInfo({
   if (variant === "grid") {
     return (
       <section
-        className={`rounded-2xl bg-white/85 backdrop-blur-md shadow-sm ring-1 ring-slate-200 p-6 ${className}`}
+        className={`rounded-2xl bg-white/85 p-6 shadow-sm ring-1 ring-slate-200 backdrop-blur-md ${className}`}
         style={padStyle}
       >
         <h3 className="mb-4 text-center text-lg font-semibold text-sky-700">
@@ -158,7 +160,7 @@ function LegalInfo({
     const tiles = [data.name, data.inn, data.ogrn, data.addr, data.bik];
     return (
       <section
-        className={`rounded-2xl bg-white/85 backdrop-blur-md shadow-sm ring-1 ring-slate-200 p-6 ${className}`}
+        className={`rounded-2xl bg-white/85 p-6 shadow-sm ring-1 ring-slate-200 backdrop-blur-md ${className}`}
         style={padStyle}
       >
         <h3 className="mb-4 text-center text-lg font-semibold text-sky-700">
@@ -181,7 +183,7 @@ function LegalInfo({
   // ВАРИАНТ 1 — аккуратная карточка, вертикальный список с иконками (по умолчанию)
   return (
     <section
-      className={`rounded-2xl bg-white/85 backdrop-blur-md shadow-sm ring-1 ring-slate-200 p-6 ${className}`}
+      className={`rounded-2xl bg-white/85 p-6 shadow-sm ring-1 ring-slate-200 backdrop-blur-md ${className}`}
       style={padStyle}
     >
       <h3 className="mb-3 text-center text-lg font-semibold text-sky-700">
@@ -208,8 +210,12 @@ function InfoRow({
   className?: string;
 }) {
   return (
-    <div className={`rounded-lg bg-slate-50/70 p-3 ring-1 ring-slate-200 ${className}`}>
-      <div className="text-xs uppercase tracking-wide text-slate-500">{label}</div>
+    <div
+      className={`rounded-lg bg-slate-50/70 p-3 ring-1 ring-slate-200 ${className}`}
+    >
+      <div className="text-xs tracking-wide text-slate-500 uppercase">
+        {label}
+      </div>
       <div className="mt-0.5 text-sm font-medium text-slate-800">{value}</div>
     </div>
   );
@@ -228,46 +234,101 @@ function LegalRow({ icon, text }: { icon: React.ReactNode; text: string }) {
 function BuildingIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg viewBox="0 0 24 24" width="18" height="18" fill="none" {...props}>
-      <path d="M4 20h16M6 20V7a2 2 0 0 1 2-2h4l6 6v9" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
-      <path d="M14 5v4h4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+      <path
+        d="M4 20h16M6 20V7a2 2 0 0 1 2-2h4l6 6v9"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M14 5v4h4"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
     </svg>
   );
 }
 function IdIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg viewBox="0 0 24 24" width="18" height="18" fill="none" {...props}>
-      <rect x="3" y="6" width="18" height="12" rx="2" stroke="currentColor" strokeWidth="1.6"/>
-      <path d="M7 10h5M7 14h8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/>
+      <rect
+        x="3"
+        y="6"
+        width="18"
+        height="12"
+        rx="2"
+        stroke="currentColor"
+        strokeWidth="1.6"
+      />
+      <path
+        d="M7 10h5M7 14h8"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+      />
     </svg>
   );
 }
 function ShieldIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg viewBox="0 0 24 24" width="18" height="18" fill="none" {...props}>
-      <path d="M12 3l7 3v5c0 5-3.5 8-7 10-3.5-2-7-5-7-10V6l7-3Z" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
-      <path d="M9 12l2 2 4-4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+      <path
+        d="M12 3l7 3v5c0 5-3.5 8-7 10-3.5-2-7-5-7-10V6l7-3Z"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M9 12l2 2 4-4"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
     </svg>
   );
 }
 function MapPinIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg viewBox="0 0 24 24" width="18" height="18" fill="none" {...props}>
-      <path d="M12 21s7-5.2 7-11a7 7 0 1 0-14 0c0 5.8 7 11 7 11Z" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
-      <circle cx="12" cy="10" r="2.5" stroke="currentColor" strokeWidth="1.6"/>
+      <path
+        d="M12 21s7-5.2 7-11a7 7 0 1 0-14 0c0 5.8 7 11 7 11Z"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <circle cx="12" cy="10" r="2.5" stroke="currentColor" strokeWidth="1.6" />
     </svg>
   );
 }
 function BankIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg viewBox="0 0 24 24" width="18" height="18" fill="none" {...props}>
-      <path d="M4 10h16M6 10v7M10 10v7M14 10v7M18 10v7M3 21h18M12 3l9 5H3l9-5Z" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+      <path
+        d="M4 10h16M6 10v7M10 10v7M14 10v7M18 10v7M3 21h18M12 3l9 5H3l9-5Z"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
     </svg>
   );
 }
 
 /* -------------------- Жёлтая лента -------------------- */
 
-function YellowRibbon({ text, height = 56 }: { text: string; height?: number }) {
+function YellowRibbon({
+  text,
+  height = 56,
+}: {
+  text: string;
+  height?: number;
+}) {
   const items = Array.from({ length: 8 }, () => text);
 
   return (
@@ -279,7 +340,7 @@ function YellowRibbon({ text, height = 56 }: { text: string; height?: number }) 
       />
       {/* Основная наклонная лента */}
       <div
-        className="relative rotate-[-3deg] overflow-hidden rounded-lg bg-amber-400 ring-1 ring-amber-500/30 shadow-md"
+        className="relative rotate-[-3deg] overflow-hidden rounded-lg bg-amber-400 shadow-md ring-1 ring-amber-500/30"
         style={{ height }}
       >
         {/* мягкие маски по краям */}
@@ -287,7 +348,7 @@ function YellowRibbon({ text, height = 56 }: { text: string; height?: number }) 
         <div className="pointer-events-none absolute inset-y-0 right-0 w-10 bg-gradient-to-l from-amber-400 to-amber-400/0" />
 
         <div className="relative flex h-full items-center">
-          <div className="marquee-track flex w-max items-center gap-8 whitespace-nowrap px-6 font-semibold text-slate-900">
+          <div className="marquee-track flex w-max items-center gap-8 px-6 font-semibold whitespace-nowrap text-slate-900">
             {items.map((t, i) => (
               <span key={`a-${i}`} className="text-sm sm:text-base md:text-lg">
                 {t} <span className="mx-4 opacity-60">•</span>
@@ -296,7 +357,7 @@ function YellowRibbon({ text, height = 56 }: { text: string; height?: number }) 
           </div>
           <div
             aria-hidden
-            className="marquee-track flex w-max items-center gap-8 whitespace-nowrap px-6 font-semibold text-slate-900"
+            className="marquee-track flex w-max items-center gap-8 px-6 font-semibold whitespace-nowrap text-slate-900"
           >
             {items.map((t, i) => (
               <span key={`b-${i}`} className="text-sm sm:text-base md:text-lg">

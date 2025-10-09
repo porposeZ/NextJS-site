@@ -5,7 +5,10 @@ export const orderSchema = z.object({
   description: z.string().min(5, "Минимум 5 символов"),
   // Разрешаем "" из инпута; на выходе получаем number | undefined
   budget: z
-    .union([z.coerce.number().int().positive(), z.literal("").transform(() => undefined)])
+    .union([
+      z.coerce.number().int().positive(),
+      z.literal("").transform(() => undefined),
+    ])
     .optional(),
 });
 

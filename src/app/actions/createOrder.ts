@@ -17,7 +17,14 @@ const Input = z.object({
 
 export type CreateOrderResult =
   | { ok: true; id: string }
-  | { ok: false; error: "NOT_AUTHENTICATED" | "VALIDATION_ERROR" | "DB_ERROR" | "RATE_LIMIT" };
+  | {
+      ok: false;
+      error:
+        | "NOT_AUTHENTICATED"
+        | "VALIDATION_ERROR"
+        | "DB_ERROR"
+        | "RATE_LIMIT";
+    };
 
 export async function createOrder(raw: unknown): Promise<CreateOrderResult> {
   const session = await auth();
@@ -31,11 +38,18 @@ export async function createOrder(raw: unknown): Promise<CreateOrderResult> {
 
   // формируем dueDate; простой валидатор
   const due = new Date(`${date}T00:00:00.000Z`);
-  if (Number.isNaN(due.getTime())) return { ok: false, error: "VALIDATION_ERROR" };
+  if (Number.isNaN(due.getTime()))
+    return { ok: false, error: "VALIDATION_ERROR" };
 
   try {
     const order = await db.order.create({
-      data: { userId, city, description: details, status: "REVIEW", dueDate: due },
+      data: {
+        userId,
+        city,
+        description: details,
+        status: "REVIEW",
+        dueDate: due,
+      },
       select: {
         id: true,
         city: true,

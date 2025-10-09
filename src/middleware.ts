@@ -33,7 +33,9 @@ export async function middleware(req: NextRequest) {
     if (!token) {
       const url = req.nextUrl.clone();
       url.pathname = "/auth/signin";
-      url.search = new URLSearchParams({ callbackUrl: "/admin/orders" }).toString();
+      url.search = new URLSearchParams({
+        callbackUrl: "/admin/orders",
+      }).toString();
       return NextResponse.redirect(url);
     }
 

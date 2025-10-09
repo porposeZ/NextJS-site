@@ -70,19 +70,18 @@ export default function HomeForm({
   const isCompany = watch("personType") === "company";
 
   // --- Минимально допустимая дата (с +3 дня от сегодня, т.е. "минимум за 2 дня") ---
-const { minDateISO, minDateObjRu } = useMemo(() => {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);      // локальная полуночь
+  const { minDateISO, minDateObjRu } = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // локальная полуночь
 
-  const min = new Date(today);
-  min.setDate(min.getDate() + 3); // можно с 3-го дня
+    const min = new Date(today);
+    min.setDate(min.getDate() + 3); // можно с 3-го дня
 
-  // ЛОКАЛЬНОЕ форматирование (без UTC)
-  const iso = toLocalISO(min);          // YYYY-MM-DD
-  const ru  = min.toLocaleDateString("ru-RU"); // 09.10.2025
-  return { minDateISO: iso, minDateObjRu: ru };
-}, []);
-
+    // ЛОКАЛЬНОЕ форматирование (без UTC)
+    const iso = toLocalISO(min); // YYYY-MM-DD
+    const ru = min.toLocaleDateString("ru-RU"); // 09.10.2025
+    return { minDateISO: iso, minDateObjRu: ru };
+  }, []);
 
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -122,11 +121,18 @@ const { minDateISO, minDateObjRu } = useMemo(() => {
 
   return (
     <Card className="p-6">
-      <form className="grid grid-cols-1 gap-4 md:grid-cols-2" onSubmit={handleSubmit(onSubmit)}>
+      <form
+        className="grid grid-cols-1 gap-4 md:grid-cols-2"
+        onSubmit={handleSubmit(onSubmit)}
+      >
         {/* переключатель ФЛ/ЮЛ */}
-        <div className="md:col-span-2 flex gap-6 text-sm">
+        <div className="flex gap-6 text-sm md:col-span-2">
           <label className="flex items-center gap-2">
-            <input type="radio" value="individual" {...register("personType")} />
+            <input
+              type="radio"
+              value="individual"
+              {...register("personType")}
+            />
             Для физических лиц
           </label>
           <label className="flex items-center gap-2">
@@ -148,7 +154,9 @@ const { minDateISO, minDateObjRu } = useMemo(() => {
             })}
             placeholder="Иванов Иван"
           />
-          {errors.fio && <p className="mt-1 text-xs text-rose-600">{errors.fio.message}</p>}
+          {errors.fio && (
+            <p className="mt-1 text-xs text-rose-600">{errors.fio.message}</p>
+          )}
         </div>
 
         {/* Email */}
@@ -167,7 +175,9 @@ const { minDateISO, minDateObjRu } = useMemo(() => {
             })}
             placeholder="you@mail.ru"
           />
-          {errors.email && <p className="mt-1 text-xs text-rose-600">{errors.email.message}</p>}
+          {errors.email && (
+            <p className="mt-1 text-xs text-rose-600">{errors.email.message}</p>
+          )}
         </div>
 
         {/* Телефон */}
@@ -185,7 +195,9 @@ const { minDateISO, minDateObjRu } = useMemo(() => {
             })}
             placeholder="+7 999 123-45-67"
           />
-          {errors.phone && <p className="mt-1 text-xs text-rose-600">{errors.phone.message}</p>}
+          {errors.phone && (
+            <p className="mt-1 text-xs text-rose-600">{errors.phone.message}</p>
+          )}
         </div>
 
         {/* Город — автокомплит */}
@@ -216,7 +228,9 @@ const { minDateISO, minDateObjRu } = useMemo(() => {
               },
             })}
           />
-          {errors.date && <p className="mt-1 text-xs text-rose-600">{errors.date.message}</p>}
+          {errors.date && (
+            <p className="mt-1 text-xs text-rose-600">{errors.date.message}</p>
+          )}
           <p className="mt-1 text-[11px] text-slate-500">
             Можно выбрать начиная с {minDateObjRu}.
           </p>
@@ -234,10 +248,12 @@ const { minDateISO, minDateObjRu } = useMemo(() => {
                 minLength: { value: 2, message: "Минимум 2 символа" },
                 maxLength: { value: 200, message: "Слишком длинно" },
               })}
-              placeholder='ООО «Пример»'
+              placeholder="ООО «Пример»"
             />
             {errors.organization && (
-              <p className="mt-1 text-xs text-rose-600">{errors.organization.message}</p>
+              <p className="mt-1 text-xs text-rose-600">
+                {errors.organization.message}
+              </p>
             )}
           </div>
         )}
@@ -252,11 +268,19 @@ const { minDateISO, minDateObjRu } = useMemo(() => {
             {...register("details", { required: "Опишите задачу" })}
             placeholder="Что нужно сделать поручителю?"
           />
-          {errors.details && <p className="mt-1 text-xs text-rose-600">{errors.details.message}</p>}
+          {errors.details && (
+            <p className="mt-1 text-xs text-rose-600">
+              {errors.details.message}
+            </p>
+          )}
         </div>
 
         <div className="md:col-span-2">
-          <Button type="submit" className="bg-orange-500 hover:bg-orange-600" disabled={loading}>
+          <Button
+            type="submit"
+            className="bg-orange-500 hover:bg-orange-600"
+            disabled={loading}
+          >
             {loading ? "Отправляем..." : "Создать заказ"}
           </Button>
         </div>

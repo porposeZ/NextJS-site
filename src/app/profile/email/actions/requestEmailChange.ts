@@ -8,9 +8,14 @@ import { addHours } from "date-fns";
 
 const EmailSchema = z.string().email().max(190);
 
-export async function requestEmailChange(rawEmail: unknown): Promise<
+export async function requestEmailChange(
+  rawEmail: unknown,
+): Promise<
   | { ok: true }
-  | { ok: false; error: "NOT_AUTH" | "INVALID_EMAIL" | "EMAIL_TAKEN" | "DB_ERROR" }
+  | {
+      ok: false;
+      error: "NOT_AUTH" | "INVALID_EMAIL" | "EMAIL_TAKEN" | "DB_ERROR";
+    }
 > {
   const session = await auth();
   const userId = session?.user?.id;
@@ -42,7 +47,7 @@ export async function requestEmailChange(rawEmail: unknown): Promise<
     // Пока — выводим ссылку в логи сервера, чтобы можно было кликнуть вручную
     console.log(
       "[email-change] confirm link:",
-      `${process.env.NEXT_PUBLIC_BASE_URL ?? "http://localhost:3000"}/profile/confirm-email?token=${token}`
+      `${process.env.NEXT_PUBLIC_BASE_URL ?? "http://localhost:3000"}/profile/confirm-email?token=${token}`,
     );
 
     return { ok: true };

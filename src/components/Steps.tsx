@@ -3,11 +3,23 @@
 type Step = { title: string; text: string };
 
 const STEPS: Step[] = [
-  { title: "Создайте заказ", text: "Опишите задачу, город и желаемую дату исполнения." },
-  { title: "Мы свяжемся", text: "Менеджер уточнит все детали и согласует с вами сроки." },
+  {
+    title: "Создайте заказ",
+    text: "Опишите задачу, город и желаемую дату исполнения.",
+  },
+  {
+    title: "Мы свяжемся",
+    text: "Менеджер уточнит все детали и согласует с вами сроки.",
+  },
   { title: "Оплатите", text: "Быстрая и безопасная оплата." },
-  { title: "Подбор исполнителя", text: "Найдем подходящего помощника под ваши запросы." },
-  { title: "Исполнитель выполнит задачу", text: "Проконтролируем сроки и качество исполнения." },
+  {
+    title: "Подбор исполнителя",
+    text: "Найдем подходящего помощника под ваши запросы.",
+  },
+  {
+    title: "Исполнитель выполнит задачу",
+    text: "Проконтролируем сроки и качество исполнения.",
+  },
 ];
 
 const BG_URLS = [
@@ -111,14 +123,16 @@ function StepCard({
       />
 
       {/* Номер карточки слева сверху */}
-      <div className="absolute left-3 top-3 z-10 flex h-7 w-7 items-center justify-center rounded-full bg-sky-600 text-xs font-bold text-white shadow">
+      <div className="absolute top-3 left-3 z-10 flex h-7 w-7 items-center justify-center rounded-full bg-sky-600 text-xs font-bold text-white shadow">
         {index}
       </div>
 
       {/* Контент */}
-      <div className="relative z-10 pl-8 pt-3">
+      <div className="relative z-10 pt-3 pl-8">
         <div className="text-base font-semibold text-slate-900">{title}</div>
-        <div className="mt-1 text-[15px] leading-snug text-slate-800">{text}</div>
+        <div className="mt-1 text-[15px] leading-snug text-slate-800">
+          {text}
+        </div>
       </div>
     </li>
   );

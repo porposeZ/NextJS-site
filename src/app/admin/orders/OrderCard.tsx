@@ -13,7 +13,11 @@ type Order = {
   status: "REVIEW" | "AWAITING_PAYMENT" | "IN_PROGRESS" | "DONE" | "CANCELED";
   createdAt: string | Date;
   dueDate?: string | Date | null;
-  user?: { email?: string | null; name?: string | null; phone?: string | null } | null;
+  user?: {
+    email?: string | null;
+    name?: string | null;
+    phone?: string | null;
+  } | null;
   events?: { id: string; message: string; createdAt: string | Date }[];
 };
 
@@ -43,7 +47,9 @@ export default function OrderCard({ order }: { order: Order }) {
         <StatusBadge status={order.status} />
       </div>
 
-      <div className="mt-2 whitespace-pre-wrap text-sm">{order.description}</div>
+      <div className="mt-2 text-sm whitespace-pre-wrap">
+        {order.description}
+      </div>
 
       <div className="mt-3 grid gap-1 text-xs text-slate-600">
         <div>
@@ -54,13 +60,11 @@ export default function OrderCard({ order }: { order: Order }) {
           <b>Телефон:</b> {order.user?.phone ?? "—"}
         </div>
         <div>
-          <b>Создано:</b>{" "}
-          {new Date(order.createdAt).toLocaleString()}
+          <b>Создано:</b> {new Date(order.createdAt).toLocaleString()}
         </div>
         {order.dueDate && (
           <div>
-            <b>К исполнению:</b>{" "}
-            {new Date(order.dueDate).toLocaleDateString()}
+            <b>К исполнению:</b> {new Date(order.dueDate).toLocaleDateString()}
           </div>
         )}
         <div>

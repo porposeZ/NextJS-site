@@ -4,7 +4,7 @@ import Link from "next/link";
 
 export default function FloatingContacts() {
   return (
-    <div className="fixed bottom-5 right-5 z-50 flex flex-col gap-3">
+    <div className="fixed right-5 bottom-5 z-50 flex flex-col gap-3">
       {/* Telegram */}
       <Link
         href="#"

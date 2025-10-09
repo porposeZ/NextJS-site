@@ -16,7 +16,9 @@ export default async function SignInPage({
   const { callbackUrl } = await searchParams;
 
   const target =
-    typeof callbackUrl === "string" && callbackUrl.length > 0 ? callbackUrl : "/orders";
+    typeof callbackUrl === "string" && callbackUrl.length > 0
+      ? callbackUrl
+      : "/orders";
 
   if (session?.user?.id) {
     redirect(target);
@@ -30,7 +32,9 @@ export default async function SignInPage({
     <div className="mx-auto mt-16 max-w-lg">
       <Card className="p-6 md:p-8">
         <h1 className="mb-4 text-2xl font-extrabold text-sky-700">Вход</h1>
-        <p className="mb-6 text-slate-600">Укажи email — пришлём ссылку для входа.</p>
+        <p className="mb-6 text-slate-600">
+          Укажи email — пришлём ссылку для входа.
+        </p>
 
         <SignInForm initialCsrfToken={initialCsrfToken} callbackUrl={target} />
 

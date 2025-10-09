@@ -7,7 +7,10 @@ import { revalidatePath } from "next/cache";
 
 const Input = z.object({
   name: z.string().trim().min(2).max(80),
-  phone: z.string().optional().transform((v) => (v ?? "").trim()),
+  phone: z
+    .string()
+    .optional()
+    .transform((v) => (v ?? "").trim()),
   defaultCity: z.string().trim().max(120).optional().or(z.literal("")),
   organization: z.string().trim().max(120).optional().or(z.literal("")),
 });
@@ -16,10 +19,16 @@ export type UpdateProfileResult =
   | { ok: true }
   | {
       ok: false;
-      error: "NOT_AUTHENTICATED" | "VALIDATION_ERROR" | "PHONE_TAKEN" | "DB_ERROR";
+      error:
+        | "NOT_AUTHENTICATED"
+        | "VALIDATION_ERROR"
+        | "PHONE_TAKEN"
+        | "DB_ERROR";
     };
 
-export async function updateProfile(raw: unknown): Promise<UpdateProfileResult> {
+export async function updateProfile(
+  raw: unknown,
+): Promise<UpdateProfileResult> {
   const session = await auth();
   const userId = session?.user?.id;
   if (!userId) return { ok: false, error: "NOT_AUTHENTICATED" };

@@ -44,10 +44,14 @@ export default function CityCombobox<TFieldValues extends FieldValues>({
       control={control}
       rules={{
         required: "Укажите город",
-        validate: (v) => CITY_SET.has((v ?? "") as string) || "Выберите город из списка",
+        validate: (v) =>
+          CITY_SET.has((v ?? "") as string) || "Выберите город из списка",
         ...rules,
       }}
-      render={({ field: { value, onChange, onBlur, ref }, fieldState: { error } }) => (
+      render={({
+        field: { value, onChange, onBlur, ref },
+        fieldState: { error },
+      }) => (
         <CityComboInner
           value={(value ?? "") as string}
           onChange={(v) => onChange(v)}
@@ -127,11 +131,14 @@ function CityComboInner({
         onFocus={() => setOpen(true)}
         onBlur={onBlur}
         placeholder={placeholder}
-        className={`w-full rounded-md border px-3 py-2 outline-none ring-1 transition ${
-          error ? "border-rose-300 ring-rose-300" : "border-slate-200 ring-slate-200 focus:ring-sky-400"
+        className={`w-full rounded-md border px-3 py-2 ring-1 transition outline-none ${
+          error
+            ? "border-rose-300 ring-rose-300"
+            : "border-slate-200 ring-slate-200 focus:ring-sky-400"
         }`}
         onKeyDown={(e) => {
-          if (!open && (e.key === "ArrowDown" || e.key === "ArrowUp")) setOpen(true);
+          if (!open && (e.key === "ArrowDown" || e.key === "ArrowUp"))
+            setOpen(true);
           if (e.key === "ArrowDown") {
             e.preventDefault();
             setIdx((p) => Math.min(p + 1, filtered.length - 1));
@@ -150,7 +157,7 @@ function CityComboInner({
       />
 
       {open && filtered.length > 0 && (
-        <ul className="absolute left-0 right-0 top-full z-50 mt-1 max-h-64 overflow-auto rounded-xl bg-white p-1 shadow-lg ring-1 ring-slate-200">
+        <ul className="absolute top-full right-0 left-0 z-50 mt-1 max-h-64 overflow-auto rounded-xl bg-white p-1 shadow-lg ring-1 ring-slate-200">
           {filtered.map((c, i) => (
             <li
               key={`${c}-${i}`}

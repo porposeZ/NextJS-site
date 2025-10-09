@@ -7,7 +7,10 @@ import { env } from "~/server/env";
 import { sendMail } from "~/server/email/send";
 import OrderStatusChanged from "~/emails/OrderStatusChanged";
 
-export async function updateOrderStatus(orderId: string, newStatus: OrderStatus) {
+export async function updateOrderStatus(
+  orderId: string,
+  newStatus: OrderStatus,
+) {
   const session = await getSession();
   if (!session?.user?.email || session.user.email !== env.ADMIN_EMAIL) {
     return { ok: false as const, error: "FORBIDDEN" as const };

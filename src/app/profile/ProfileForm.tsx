@@ -72,7 +72,9 @@ export default function ProfileForm({ initial }: { initial: FormData }) {
           })}
           placeholder="Иванов Иван Иванович"
         />
-        {errors.name && <p className="mt-1 text-xs text-rose-600">{errors.name.message}</p>}
+        {errors.name && (
+          <p className="mt-1 text-xs text-rose-600">{errors.name.message}</p>
+        )}
       </div>
 
       <div>
@@ -89,14 +91,20 @@ export default function ProfileForm({ initial }: { initial: FormData }) {
           })}
           placeholder="+7 999 123-45-67"
         />
-        {errors.phone && <p className="mt-1 text-xs text-rose-600">{errors.phone.message}</p>}
+        {errors.phone && (
+          <p className="mt-1 text-xs text-rose-600">{errors.phone.message}</p>
+        )}
       </div>
 
       <div>
         <Label className="mb-1 block">
           Город по умолчанию <span className="text-rose-500">*</span>
         </Label>
-        <CityCombo control={control} name="defaultCity" placeholder="Например, Красноярск" />
+        <CityCombo
+          control={control}
+          name="defaultCity"
+          placeholder="Например, Красноярск"
+        />
       </div>
 
       <div>
@@ -108,12 +116,18 @@ export default function ProfileForm({ initial }: { initial: FormData }) {
           placeholder="ООО «Яесть»"
         />
         {errors.organization && (
-          <p className="mt-1 text-xs text-rose-600">{errors.organization.message}</p>
+          <p className="mt-1 text-xs text-rose-600">
+            {errors.organization.message}
+          </p>
         )}
       </div>
 
       <div className="flex gap-2">
-        <Button type="submit" className="bg-orange-500 hover:bg-orange-600" disabled={isPending}>
+        <Button
+          type="submit"
+          className="bg-orange-500 hover:bg-orange-600"
+          disabled={isPending}
+        >
           {isPending ? "Сохраняем..." : "Сохранить"}
         </Button>
       </div>

@@ -121,10 +121,9 @@ export default async function HomePage() {
 
       {/* Полоса услуг */}
       <section className="space-y-4">
-        <h2 className="text-center text-2xl font-extrabолd text-sky-700">
+        <h2 className="font-extrabолd text-center text-2xl text-sky-700">
           Выполняем полный спектр услуг для физических и юридических лиц
-          <br />
-          в разных городах России
+          <br />в разных городах России
         </h2>
         <ServicesStrip />
       </section>
@@ -142,7 +141,12 @@ function InfoCard({
   bgIndex: number;
 }) {
   const bgUrl = `/InfoCard/info-${bgIndex}.png`;
-  const positions = ["left top", "right top", "left bottom", "right bottom"] as const;
+  const positions = [
+    "left top",
+    "right top",
+    "left bottom",
+    "right bottom",
+  ] as const;
   const pos = positions[(bgIndex - 1) % positions.length];
 
   return (
@@ -163,7 +167,14 @@ function InfoCard({
 
 function CheckIcon() {
   return (
-    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden="true" className="shrink-0">
+    <svg
+      width="28"
+      height="28"
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden="true"
+      className="shrink-0"
+    >
       <circle cx="12" cy="12" r="10" className="fill-emerald-500/15" />
       <path
         d="M7 12.5l3.2 3L17 8.5"

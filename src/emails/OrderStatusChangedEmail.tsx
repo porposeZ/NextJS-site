@@ -7,18 +7,30 @@ export type OrderStatus =
 
 export function readableStatus(s: OrderStatus): string {
   switch (s) {
-    case "REVIEW": return "Принята на рассмотрение";
-    case "AWAITING_PAYMENT": return "Ожидает оплаты";
-    case "IN_PROGRESS": return "В работе";
-    case "DONE": return "Завершена";
-    case "CANCELED": return "Отменена";
-    default: return s;
+    case "REVIEW":
+      return "Принята на рассмотрение";
+    case "AWAITING_PAYMENT":
+      return "Ожидает оплаты";
+    case "IN_PROGRESS":
+      return "В работе";
+    case "DONE":
+      return "Завершена";
+    case "CANCELED":
+      return "Отменена";
+    default:
+      return s;
   }
 }
 
 export default function OrderStatusChangedEmail(props: {
   status: OrderStatus;
-  order: { id: string; city: string; description: string; createdAt: Date; dueDate?: Date };
+  order: {
+    id: string;
+    city: string;
+    description: string;
+    createdAt: Date;
+    dueDate?: Date;
+  };
   appUrl: string;
   userName?: string;
   paymentMethod?: "yookassa" | "card";
@@ -58,15 +70,31 @@ export default function OrderStatusChangedEmail(props: {
   return (
     <div style={{ fontFamily: "Inter, Arial, sans-serif" }}>
       <h2>{userName ? `${userName}, ` : ""}статус вашей заявки изменился</h2>
-      <p><b>Текущий статус:</b> {readableStatus(status)}</p>
+      <p>
+        <b>Текущий статус:</b> {readableStatus(status)}
+      </p>
       <p>{intro}</p>
       {pmText && <p>{pmText}</p>}
       <hr />
-      <p><b>Город:</b> {order.city}</p>
-      {order.dueDate && <p><b>К исполнению:</b> {order.dueDate.toLocaleDateString()}</p>}
-      <p><b>Описание:</b><br />{order.description}</p>
-      <p><b>ID заявки:</b> {order.id}</p>
-      <p>Посмотреть заявку: <a href={ordersLink}>{ordersLink}</a></p>
+      <p>
+        <b>Город:</b> {order.city}
+      </p>
+      {order.dueDate && (
+        <p>
+          <b>К исполнению:</b> {order.dueDate.toLocaleDateString()}
+        </p>
+      )}
+      <p>
+        <b>Описание:</b>
+        <br />
+        {order.description}
+      </p>
+      <p>
+        <b>ID заявки:</b> {order.id}
+      </p>
+      <p>
+        Посмотреть заявку: <a href={ordersLink}>{ordersLink}</a>
+      </p>
       <p style={{ color: "#64748b", fontSize: 12 }}>
         Письмо отправлено автоматически, отвечать на него не нужно.
       </p>

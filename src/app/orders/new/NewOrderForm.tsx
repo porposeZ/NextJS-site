@@ -40,7 +40,9 @@ export default function NewOrderForm({ action }: Props) {
         <div>
           <Label htmlFor="city">Город</Label>
           <Input id="city" {...register("city")} />
-          {errors.city && <p className="text-sm text-red-600">{errors.city.message}</p>}
+          {errors.city && (
+            <p className="text-sm text-red-600">{errors.city.message}</p>
+          )}
         </div>
 
         <div>
@@ -54,7 +56,9 @@ export default function NewOrderForm({ action }: Props) {
         <div>
           <Label htmlFor="budget">Бюджет (необязательно)</Label>
           <Input id="budget" type="number" {...register("budget")} />
-          {errors.budget && <p className="text-sm text-red-600">{errors.budget.message}</p>}
+          {errors.budget && (
+            <p className="text-sm text-red-600">{errors.budget.message}</p>
+          )}
         </div>
 
         <Button disabled={isSubmitting} className="bg-black text-white">

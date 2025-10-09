@@ -18,7 +18,9 @@ export default function SignInForm({
   useEffect(() => {
     if (!csrf) {
       fetch("/api/auth/csrf", { credentials: "include", cache: "no-store" })
-        .then((r) => (r.ok ? r.json() : Promise.reject(new Error("csrf fetch failed"))))
+        .then((r) =>
+          r.ok ? r.json() : Promise.reject(new Error("csrf fetch failed")),
+        )
         .then((d: { csrfToken?: string }) => setCsrf(d?.csrfToken ?? ""))
         .catch(() => undefined);
     }
@@ -36,7 +38,11 @@ export default function SignInForm({
         <Input type="email" name="email" placeholder="you@mail.ru" required />
       </div>
 
-      <Button type="submit" className="bg-orange-500 hover:bg-orange-600" disabled={!csrf}>
+      <Button
+        type="submit"
+        className="bg-orange-500 hover:bg-orange-600"
+        disabled={!csrf}
+      >
         Получить ссылку
       </Button>
     </form>

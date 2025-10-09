@@ -8,7 +8,7 @@ export default function Footer() {
           {/* Левая колонка — реквизиты (в 2 строки, как изначально) */}
           <Link
             href="/about"
-            className="block text-xs leading-6 text-slate-600 transition-colors hover:text-sky-700 md:pr-6 md:grow"
+            className="block text-xs leading-6 text-slate-600 transition-colors hover:text-sky-700 md:grow md:pr-6"
           >
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
               <span>ИП Вогоровский Максим Михайлович</span>
@@ -18,7 +18,7 @@ export default function Footer() {
               <span>ОГРН 320246800081987</span>
             </div>
 
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1.5">
+            <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1">
               <span>660100, Россия, Красноярский край, г. Красноярск</span>
               <span className="text-slate-300">•</span>
               <span>БИК 044525974</span>
@@ -29,7 +29,7 @@ export default function Footer() {
           <div className="my-4 hidden h-6 w-px bg-slate-200 md:my-0 md:block" />
 
           {/* Правая колонка — контакты */}
-          <div className="text-xs leading-5 text-slate-600 md:pl-6 md:w-64">
+          <div className="text-xs leading-5 text-slate-600 md:w-64 md:pl-6">
             <div className="mb-2 font-semibold text-slate-800">Контакты</div>
 
             <ul className="space-y-1.5">

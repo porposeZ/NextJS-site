@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
-import { db } from "~/server/db";         // проверь путь в своём проекте
-import { auth } from "~/server/auth";     // именованный экспорт из src/server/auth
+import { db } from "~/server/db"; // проверь путь в своём проекте
+import { auth } from "~/server/auth"; // именованный экспорт из src/server/auth
 import NewOrderForm from "./NewOrderForm";
 import { orderSchema } from "./schema";
 

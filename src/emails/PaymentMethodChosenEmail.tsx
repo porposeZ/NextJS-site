@@ -1,5 +1,11 @@
 export default function PaymentMethodChosenEmail(props: {
-  order: { id: string; city: string; description: string; createdAt: Date; dueDate?: Date };
+  order: {
+    id: string;
+    city: string;
+    description: string;
+    createdAt: Date;
+    dueDate?: Date;
+  };
   userEmail: string;
   method: "yookassa" | "card";
   adminLink: string;
@@ -13,10 +19,22 @@ export default function PaymentMethodChosenEmail(props: {
         <b>{method === "card" ? "Банковская карта" : "ЮKassa"}</b>.
       </p>
       <hr />
-      <p><b>ID заявки:</b> {order.id}</p>
-      <p><b>Город:</b> {order.city}</p>
-      {order.dueDate && <p><b>К исполнению:</b> {order.dueDate.toLocaleDateString()}</p>}
-      <p><b>Описание:</b><br />{order.description}</p>
+      <p>
+        <b>ID заявки:</b> {order.id}
+      </p>
+      <p>
+        <b>Город:</b> {order.city}
+      </p>
+      {order.dueDate && (
+        <p>
+          <b>К исполнению:</b> {order.dueDate.toLocaleDateString()}
+        </p>
+      )}
+      <p>
+        <b>Описание:</b>
+        <br />
+        {order.description}
+      </p>
       <p>
         Открыть админку: <a href={adminLink}>{adminLink}</a>
       </p>

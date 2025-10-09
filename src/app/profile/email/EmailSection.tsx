@@ -7,7 +7,11 @@ import { Input } from "~/components/ui/input";
 import { Button } from "~/components/ui/button";
 import { requestEmailChange } from "./actions/requestEmailChange";
 
-export default function EmailSection({ currentEmail }: { currentEmail: string }) {
+export default function EmailSection({
+  currentEmail,
+}: {
+  currentEmail: string;
+}) {
   const [email, setEmail] = useState(currentEmail);
   const [toast, setToast] = useState<{ type: "ok" | "err"; text: string }>();
   const [isPending, startTransition] = useTransition();
@@ -28,8 +32,7 @@ export default function EmailSection({ currentEmail }: { currentEmail: string })
       }
       setToast({
         type: "ok",
-        text:
-          "Ссылка для подтверждения отправлена. Проверьте почту (в тестовом режиме ссылка появится в логах сервера).",
+        text: "Ссылка для подтверждения отправлена. Проверьте почту (в тестовом режиме ссылка появится в логах сервера).",
       });
       setTimeout(() => setToast(undefined), 7000);
     });
@@ -39,8 +42,8 @@ export default function EmailSection({ currentEmail }: { currentEmail: string })
     <Card className="p-6">
       <h2 className="mb-2 text-lg font-semibold">Смена e-mail</h2>
       <p className="mb-4 text-sm text-slate-600">
-        Текущий e-mail используется для входа и уведомлений. Чтобы изменить его, укажите новый адрес
-        и подтвердите по ссылке из письма.
+        Текущий e-mail используется для входа и уведомлений. Чтобы изменить его,
+        укажите новый адрес и подтвердите по ссылке из письма.
       </p>
 
       {toast && (
