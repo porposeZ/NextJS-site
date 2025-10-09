@@ -1119,6 +1119,8 @@ export const CITIES = [
   "Иннополис",
 ] as const;
 
-export function isValidCity(city: string) {
-  return CITIES.includes(city.trim() as any);
+const CITY_SET: ReadonlySet<string> = new Set<string>(CITIES as readonly string[]);
+
+export function isValidCity(city: string): boolean {
+  return CITY_SET.has(city.trim());
 }
