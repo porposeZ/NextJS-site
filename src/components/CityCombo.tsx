@@ -21,7 +21,7 @@ type Props<TFieldValues extends FieldValues> = {
   limit?: number;
 };
 
-export default function CityCombo<TFieldValues extends FieldValues>({
+export default function CityCombobox<TFieldValues extends FieldValues>({
   control,
   name,
   rules,

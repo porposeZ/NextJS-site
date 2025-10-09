@@ -6,12 +6,12 @@ import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Textarea } from "~/components/ui/textarea";
 import { Label } from "~/components/ui/label";
-import { Controller, useForm } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { createOrder } from "./actions/createOrder";
 import { isValidCity } from "~/lib/cities";
-import CityCombobox from "~/components/CityCombo";
+import CityCombo from "~/components/CityCombo";
 
 type FormData = {
   fio: string;
@@ -152,24 +152,18 @@ export default function HomeClient(props: {
             </div>
           </div>
 
-          <div>
-            <Label>Город</Label>
-            <Controller
-              control={control}
-              name="city"
-              rules={{
-                required: "Укажите город",
-                validate: (v) => isValidCity(v) || "Выберите город из списка",
-              }}
-              render={({ field, fieldState }) => (
-                <CityCombobox
-                  value={field.value}
-                  onChange={field.onChange}
-                  error={fieldState.error?.message ?? null}
-                />
-              )}
-            />
-          </div>
+         <div>
+  <Label>Город</Label>
+  <CityCombo
+    control={control}
+    name={"city"}
+    rules={{
+      required: "Укажите город",
+      validate: (v) => isValidCity(v) || "Выберите город из списка",
+    }}
+  />
+</div>
+
 
           <div>
             <Label>Дата исполнения</Label>
