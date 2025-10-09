@@ -5,7 +5,7 @@ import NewOrderForm from "./NewOrderForm";
 import { orderSchema } from "./schema";
 
 // ⬇ Server Action: объявлен в серверном модуле + "use server"
-export async function createOrderAction(formData: FormData) {
+async function createOrderAction(formData: FormData) {
   "use server";
 
   const session = await auth();
