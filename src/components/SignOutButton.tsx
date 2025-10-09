@@ -1,54 +1,31 @@
 "use client";
 
 import { useState } from "react";
+import { signOut } from "next-auth/react";
 import { Button } from "~/components/ui/button";
 
-export default function SignOutButton({
-  className,
-  size = "sm",
-  variant = "secondary",
-  children = "Выйти",
-}: {
+type Props = {
+  callbackUrl?: string;
   className?: string;
-  size?: "sm" | "default" | "lg" | "icon";
-  variant?: "default" | "secondary" | "destructive" | "ghost" | "link" | "outline";
+  variant?: React.ComponentProps<typeof Button>["variant"];
+  size?: React.ComponentProps<typeof Button>["size"];
   children?: React.ReactNode;
-}) {
+};
+
+export default function SignOutButton({
+  callbackUrl = "/",
+  className,
+  variant = "secondary",
+  size = "sm",
+  children = "Выйти",
+}: Props) {
   const [loading, setLoading] = useState(false);
 
-  const doSignOut = async () => {
+  const handleSignOut = async () => {
     try {
       setLoading(true);
-
-      // 1) Берём CSRF токен с /api/auth/csrf
-      const res = await fetch("/api/auth/csrf", { cache: "no-store" });
-      const data = await res.json();
-      const csrfToken =
-        data?.csrfToken || data?.csrf || data?.token || data?.value || "";
-
-      // 2) Отправляем POST на signout c токеном (двойной ключ для совместимости)
-      const body = new URLSearchParams();
-      if (csrfToken) {
-        body.set("csrfToken", csrfToken);
-        body.set("csrf", csrfToken);
-      }
-
-      const out = await fetch("/api/auth/signout", {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: body.toString(),
-      });
-
-      // 3) Перенаправление/обновление после выхода
-      if (out.redirected) {
-        window.location.href = out.url;
-      } else {
-        // fallback — просто на главную
-        window.location.href = "/";
-      }
-    } catch (e) {
-      // крайний fallback, если что-то не так
-      window.location.href = "/api/auth/signout";
+      // next-auth/react сам получит CSRF и корректно выполнит POST /api/auth/signout
+      await signOut({ callbackUrl });
     } finally {
       setLoading(false);
     }
@@ -56,11 +33,13 @@ export default function SignOutButton({
 
   return (
     <Button
-      size={size}
-      variant={variant}
-      className={className}
-      onClick={doSignOut}
+      type="button"
+      onClick={handleSignOut}
       disabled={loading}
+      variant={variant}
+      size={size}
+      className={className}
+      aria-busy={loading}
     >
       {loading ? "Выходим..." : children}
     </Button>
