@@ -1,7 +1,7 @@
 // src/components/CityCombo.tsx
 "use client";
 
-import { useMemo, useRef, useState, useEffect } from "react";
+import { useMemo, useRef, useState, useEffect, type Ref } from "react";
 import {
   Controller,
   type Control,
@@ -52,7 +52,7 @@ export default function CityCombobox<TFieldValues extends FieldValues>({
           value={(value ?? "") as string}
           onChange={(v) => onChange(v)}
           onBlur={onBlur}
-          inputRef={ref}
+          inputRef={ref as Ref<HTMLInputElement>}
           placeholder={placeholder}
           list={CITY_LIST}
           limit={limit}
@@ -76,7 +76,7 @@ function CityComboInner({
   value: string;
   onChange: (v: string) => void;
   onBlur?: () => void;
-  inputRef?: React.Ref<any>;
+  inputRef?: Ref<HTMLInputElement>;
   placeholder: string;
   list: string[];
   limit: number;

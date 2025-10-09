@@ -38,17 +38,21 @@ export async function updateProfile(raw: unknown): Promise<UpdateProfileResult> 
       data: {
         name,
         phone,
-        defaultCity: defaultCity || null,
-        organization: organization || null,
+        defaultCity: defaultCity ?? null,
+        organization: organization ?? null,
       },
     });
 
     revalidatePath("/profile");
     revalidatePath("/");
     return { ok: true };
-  } catch (e: any) {
-    if (e?.code === "P2002" && Array.isArray(e?.meta?.target) && e.meta.target.includes("phone")) {
-      return { ok: false, error: "PHONE_TAKEN" };
+  } catch (e: unknown) {
+    const err = e as { code?: string; meta?: { target?: string[] } } | null;
+    if (err?.code === "P2002") {
+      const target = err.meta?.target ?? [];
+      if (Array.isArray(target) && target.includes("phone")) {
+        return { ok: false, error: "PHONE_TAKEN" };
+      }
     }
     console.error("[profile] update failed:", e);
     return { ok: false, error: "DB_ERROR" };
