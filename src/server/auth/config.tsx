@@ -1,4 +1,6 @@
 import type { NextAuthConfig } from "next-auth";
+import type { Session } from "next-auth";
+import type { JWT } from "next-auth/jwt";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import EmailProvider from "next-auth/providers/email";
 
@@ -26,15 +28,15 @@ export const authConfig: NextAuthConfig = {
     EmailProvider({
       from: env.EMAIL_FROM,
 
-      // Добавили "server", чтобы провайдер не ругался (он не используется,
-      // т.к. мы полностью переопределяем отправку sendVerificationRequest).
+      // Не используется по факту (мы переопределяем sendVerificationRequest),
+      // но поле обязательно — оставляем заглушку.
       server: process.env.SMTP_URL ?? "smtp://user:pass@localhost:587",
 
       async sendVerificationRequest({ identifier, url }) {
-        // всегда печатаем ссылку в консоль (на dev можно кликнуть прямо отсюда)
+        // На dev будет видно в консоли
         console.log(`[auth] Magic link for ${identifier}: ${url}`);
 
-        // твоя отправка письма (Resend внутри sendMail)
+        // Отправка письма через твой Resend-обёртку
         await sendMail({
           to: identifier,
           subject: "Вход на сайт — магическая ссылка",
@@ -45,9 +47,11 @@ export const authConfig: NextAuthConfig = {
   ],
 
   callbacks: {
-    async session({ session, user, token }) {
-      const id = user?.id ?? token?.sub ?? (session.user as any)?.id;
-      if (id) (session.user as any) = { ...session.user, id };
+    // Без any: типизируем параметры и аккуратно добавляем user.id
+    session({ session, token }: { session: Session; token: JWT }) {
+      if (session.user) {
+        (session.user as { id?: string }).id = token.sub ?? undefined;
+      }
       return session;
     },
   },

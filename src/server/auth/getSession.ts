@@ -1,21 +1,9 @@
-import getServerSession from "next-auth";
-import { authConfig } from "./config";
+import type { Session } from "next-auth";
+import { auth } from "~/server/auth";
 
-// Возвращаем объект с типом, удобным для нас.
-// Это не меняет runtime — только упрощает типы.
-export type SafeSession =
-  | {
-      user?: {
-        id?: string | null;
-        email?: string | null;
-        name?: string | null;
-        image?: string | null;
-      };
-      // можно добавить сюда любые поля, если появятся
-    }
-  | null;
+// Возвращаем ту же сессию, что и везде по проекту (через auth()).
+export type SafeSession = Session | null;
 
 export async function getSession(): Promise<SafeSession> {
-  const s = await getServerSession(authConfig);
-  return s as unknown as SafeSession;
+  return auth();
 }

@@ -27,8 +27,8 @@ export async function middleware(req: NextRequest) {
 
   // /admin/* — только админ (по email)
   if (pathname.startsWith("/admin")) {
-    const admin = (process.env.ADMIN_EMAIL || "").toLowerCase();
-    const email = (token?.email || "").toLowerCase();
+    const admin = (process.env.ADMIN_EMAIL ?? "").toLowerCase();
+    const email = (token?.email ?? "").toLowerCase();
 
     if (!token) {
       const url = req.nextUrl.clone();
