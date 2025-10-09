@@ -25,16 +25,18 @@ function formatRuPhone(input: string) {
   let d = input.replace(/\D/g, "");
   if (d.startsWith("8")) d = "7" + d.slice(1);
   if (d.length === 10 && d.startsWith("9")) d = "7" + d;
-  const valid = d.length === 11 && d[0] === "7";
-  let rest = d[0] === "7" ? d.slice(1) : d;
+  const valid = d.length === 11 && d.startsWith("7");
+  const rest = d.startsWith("7") ? d.slice(1) : d;
   const p1 = rest.slice(0, 3);
   const p2 = rest.slice(3, 6);
   const p3 = rest.slice(6, 8);
   const p4 = rest.slice(8, 10);
   const formatted =
-    (p1 || p2 || p3 || p4)
+    p1 || p2 || p3 || p4
       ? `+7${p1 ? " " + p1 : ""}${p2 ? " " + p2 : ""}${p3 ? "-" + p3 : ""}${p4 ? "-" + p4 : ""}`
-      : (input.trim().startsWith("+") ? input : "");
+      : input.trim().startsWith("+")
+        ? input
+        : "";
   return { formatted, valid, digits: d };
 }
 
@@ -77,7 +79,7 @@ export default function HomeClient(props: {
     const res = await createOrder({
       city: data.city,
       details: data.details,
-      date: data.date, // теперь обязательно
+      date: data.date,
     });
 
     if (!res.ok) {
@@ -147,28 +149,29 @@ export default function HomeClient(props: {
               {phone && !phoneState.valid ? (
                 <span className="text-red-600">Некорректный номер.</span>
               ) : (
-                <span className="text-slate-500">Подставляется из личного кабинета (если указан).</span>
+                <span className="text-slate-500">
+                  Подставляется из личного кабинета (если указан).
+                </span>
               )}
             </div>
           </div>
 
-         <div>
-  <Label>Город</Label>
-  <CityCombo
-    control={control}
-    name={"city"}
-    rules={{
-      required: "Укажите город",
-      validate: (v) => isValidCity(v) || "Выберите город из списка",
-    }}
-  />
-</div>
-
+          <div>
+            <Label>Город</Label>
+            <CityCombo
+              control={control}
+              name={"city"}
+              rules={{
+                required: "Укажите город",
+                validate: (v) => isValidCity(v) || "Выберите город из списка",
+              }}
+            />
+          </div>
 
           <div>
             <Label>Дата исполнения</Label>
             <Input type="date" {...register("date", { required: "Выберите дату исполнения" })} />
-            {errors.date && <p className="mt-1 text-xs text-red-600">{errors.date.message as string}</p>}
+            {errors.date && <p className="mt-1 text-xs text-red-600">{errors.date!.message}</p>}
           </div>
 
           <div className="md:col-span-2">
@@ -182,7 +185,7 @@ export default function HomeClient(props: {
               placeholder="Что нужно сделать поручителю?"
             />
             {errors.details && (
-              <p className="mt-1 text-xs text-red-600">{errors.details.message as string}</p>
+              <p className="mt-1 text-xs text-red-600">{errors.details!.message}</p>
             )}
           </div>
 

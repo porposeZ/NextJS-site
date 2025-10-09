@@ -9,24 +9,32 @@ import OrderStatusChangedEmail, {
   readableStatus,
 } from "~/emails/OrderStatusChangedEmail";
 import { env } from "~/server/env";
+import { OrderStatus } from "@prisma/client";
 
-const STATUSES = [
-  "REVIEW",
-  "AWAITING_PAYMENT",
-  "IN_PROGRESS",
-  "DONE",
-  "CANCELED",
+/** Разрешённые статусы из Prisma enum */
+const STATUSES: readonly OrderStatus[] = [
+  OrderStatus.REVIEW,
+  OrderStatus.AWAITING_PAYMENT,
+  OrderStatus.IN_PROGRESS,
+  OrderStatus.DONE,
+  OrderStatus.CANCELED,
 ] as const;
 
-type OrderStatus = (typeof STATUSES)[number];
+/** Type guard для надёжной проверки строки */
+function isOrderStatus(s: string): s is OrderStatus {
+  return (STATUSES as readonly string[]).includes(s);
+}
 
 export async function updateOrderStatus(formData: FormData) {
   await requireAdmin();
 
-  const id = String(formData.get("id") ?? "");
-  const status = String(formData.get("status") ?? "") as OrderStatus;
+  const id = (formData.get("id") as string | null) ?? "";
+  const rawStatus = (formData.get("status") as string | null) ?? "";
 
-  if (!id || !STATUSES.includes(status)) throw new Error("Invalid input");
+  if (!id || !isOrderStatus(rawStatus)) {
+    throw new Error("Invalid input");
+  }
+  const status: OrderStatus = rawStatus;
 
   await db.order.update({ where: { id }, data: { status } });
 

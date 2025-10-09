@@ -1,6 +1,6 @@
 "use server";
 
-import { OrderStatus } from "@prisma/client";
+import type { OrderStatus } from "@prisma/client";
 import { getSession } from "~/server/auth/getSession";
 import { db } from "~/server/db";
 import { env } from "~/server/env";
@@ -10,14 +10,14 @@ import OrderStatusChanged from "~/emails/OrderStatusChanged";
 export async function updateOrderStatus(orderId: string, newStatus: OrderStatus) {
   const session = await getSession();
   if (!session?.user?.email || session.user.email !== env.ADMIN_EMAIL) {
-    return { ok: false, error: "FORBIDDEN" as const };
+    return { ok: false as const, error: "FORBIDDEN" as const };
   }
 
   const order = await db.order.findUnique({
     where: { id: orderId },
     include: { user: true },
   });
-  if (!order) return { ok: false, error: "NOT_FOUND" as const };
+  if (!order) return { ok: false as const, error: "NOT_FOUND" as const };
 
   const oldStatus = order.status;
   const updated = await db.order.update({
@@ -40,7 +40,7 @@ export async function updateOrderStatus(orderId: string, newStatus: OrderStatus)
       });
     }
   } catch {
-    // проглатываем
+    // глушим, письма — best-effort
   }
 
   return { ok: true as const };

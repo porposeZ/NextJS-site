@@ -7,20 +7,20 @@ import { Label } from "~/components/ui/label";
 
 export default function SignInForm({
   initialCsrfToken = "",
-  callbackUrl = "/orders", // куда попадём ПОСЛЕ входа
+  callbackUrl = "/orders",
 }: {
   initialCsrfToken?: string;
   callbackUrl?: string;
 }) {
   const [csrf, setCsrf] = useState(initialCsrfToken);
 
-  // Берём CSRF именно в браузере, чтобы кука установилась в браузер
+  // Берём CSRF именно в браузере, чтобы кука поставилась в браузер
   useEffect(() => {
     if (!csrf) {
       fetch("/api/auth/csrf", { credentials: "include", cache: "no-store" })
-        .then((r) => (r.ok ? r.json() : Promise.reject()))
-        .then((d) => setCsrf(d?.csrfToken ?? ""))
-        .catch(() => {});
+        .then((r) => (r.ok ? r.json() : Promise.reject(new Error("csrf fetch failed"))))
+        .then((d: { csrfToken?: string }) => setCsrf(d?.csrfToken ?? ""))
+        .catch(() => undefined);
     }
   }, [csrf]);
 
@@ -28,7 +28,6 @@ export default function SignInForm({
     <form method="post" action="/api/auth/signin/email" className="grid gap-4">
       {/* обязательно — токен в hidden + кука уже стоит */}
       <input type="hidden" name="csrfToken" value={csrf} />
-
       {/* callbackUrl пойдёт внутрь magic-link и сработает ПОСЛЕ входа */}
       <input type="hidden" name="callbackUrl" value={callbackUrl} />
 

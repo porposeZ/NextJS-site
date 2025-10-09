@@ -10,7 +10,6 @@ import { Textarea } from "~/components/ui/textarea";
 import { Label } from "~/components/ui/label";
 import { Card } from "~/components/ui/card";
 
-// (на будущее, если захочешь показывать ошибки от сервера)
 type FieldErrors = Partial<Record<keyof OrderForm, string[]>>;
 type ActionResult = { ok: boolean; errors?: FieldErrors };
 
@@ -22,13 +21,12 @@ type Props = {
 export default function NewOrderForm({ action }: Props) {
   const {
     register,
-    handleSubmit,
     formState: { errors, isSubmitting },
   } = useForm<OrderForm>({
     resolver: zodResolver(orderSchema),
   });
 
-  // 👇 Обёртка с требуемой сигнатурой (Promise<void>)
+  // Обёртка с требуемой сигнатурой (Promise<void>)
   const onAction = async (formData: FormData) => {
     await action(formData);
   };
@@ -37,7 +35,8 @@ export default function NewOrderForm({ action }: Props) {
     <Card className="mx-auto max-w-xl p-6">
       <h1 className="mb-4 text-2xl font-semibold">Новый заказ</h1>
 
-      <form action={onAction} onSubmit={handleSubmit(() => {})} className="space-y-4">
+      {/* Только серверный action. onSubmit не нужен — убираем no-empty-function */}
+      <form action={onAction} className="space-y-4">
         <div>
           <Label htmlFor="city">Город</Label>
           <Input id="city" {...register("city")} />
@@ -47,13 +46,15 @@ export default function NewOrderForm({ action }: Props) {
         <div>
           <Label htmlFor="description">Описание</Label>
           <Textarea id="description" rows={5} {...register("description")} />
-          {errors.description && <p className="text-sm text-red-600">{errors.description.message}</p>}
+          {errors.description && (
+            <p className="text-sm text-red-600">{errors.description.message}</p>
+          )}
         </div>
 
         <div>
           <Label htmlFor="budget">Бюджет (необязательно)</Label>
           <Input id="budget" type="number" {...register("budget")} />
-          {errors.budget && <p className="text-sm text-red-600">{String(errors.budget)}</p>}
+          {errors.budget && <p className="text-sm text-red-600">{errors.budget.message}</p>}
         </div>
 
         <Button disabled={isSubmitting} className="bg-black text-white">

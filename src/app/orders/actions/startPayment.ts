@@ -17,8 +17,8 @@ export async function startPayment(formData: FormData) {
     throw new Error("NOT_AUTHENTICATED");
   }
 
-  const orderId = String(formData.get("orderId") ?? "");
-  const paymentMethod = String(formData.get("paymentMethod") ?? "");
+  const orderId = (formData.get("orderId") as string | null) ?? "";
+  const paymentMethod = (formData.get("paymentMethod") as string | null) ?? "";
 
   if (!orderId || !["yookassa", "card"].includes(paymentMethod)) {
     throw new Error("Invalid input");
