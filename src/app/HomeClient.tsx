@@ -85,6 +85,7 @@ export default function HomeClient(props: {
       city: data.city,
       details: data.details,
       date: data.date,
+      phone: phoneState.valid ? phoneState.digits : "",
     });
 
     if (!res.ok) {

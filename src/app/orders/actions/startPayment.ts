@@ -3,7 +3,6 @@
 import { auth } from "~/server/auth";
 import { db } from "~/server/db";
 import { revalidatePath } from "next/cache";
-import { OrderEventType } from "@prisma/client";
 
 /**
  * Старт оплаты со стороны пользователя.
@@ -31,18 +30,8 @@ export async function startPayment(formData: FormData) {
   });
   if (!order) throw new Error("Order not found");
 
-  // Логируем выбор способа оплаты
-  await db.orderEvent.create({
-    data: {
-      orderId,
-      userId: session.user.id,
-      type: OrderEventType.PAYMENT_METHOD_SELECTED, // <-- правильное значение из твоего enum
-      message:
-        paymentMethod === "yookassa"
-          ? "Пользователь выбрал оплату через ЮKassa"
-          : "Пользователь выбрал оплату банковской картой",
-    },
-  });
+  // Никаких записей в историю на этом шаге.
+  // Историю пишем только при смене статуса (успех/ошибка/отмена) — в соответствующих хэндлерах.
 
   // TODO: здесь позже добавим создание платёжной сессии/редирект
   revalidatePath("/orders");

@@ -21,7 +21,8 @@ export default async function RootLayout({
 
   return (
     <html lang="ru">
-      <body className="min-h-dvh bg-slate-50 text-slate-900 antialiased">
+      {/* ✨ ключевая правка: колонка на всю высоту */}
+      <body className="min-h-dvh flex flex-col bg-slate-50 text-slate-900 antialiased">
         {/* Header */}
         <header className="sticky top-0 z-50 bg-white/90 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-white/70">
           <nav className="relative mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3">
@@ -105,7 +106,8 @@ export default async function RootLayout({
           </nav>
         </header>
 
-        <main className="mx-auto w-full max-w-6xl px-4 py-10">{children}</main>
+        {/* ✨ ключевая правка: растягиваем контент, чтобы футер ушёл к низу */}
+        <main className="flex-1 mx-auto w-full max-w-6xl px-4 py-10">{children}</main>
 
         {/* Floating socials (как было) */}
         <div className="fixed right-5 bottom-5 z-40 flex flex-col gap-3">
@@ -114,13 +116,7 @@ export default async function RootLayout({
             href="#"
             className="rounded-full bg-green-500 p-3 text-white shadow-lg transition hover:-translate-y-0.5 hover:bg-green-600"
           >
-            <svg
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="currentColor"
-              aria-hidden="true"
-            >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
               <path d="M20 3.5A10.5 10.5 0 0 0 3.6 19.2L3 22l2.9-.6A10.5 10.5 0 1 0 20 3.5ZM12 20.5a8.5 8.5 0 1 1 7.1-13.1 8.5 8.5 0 0 1-7.1 13.1Zm4-6.3c-.2-.1-1.2-.6-1.4-.7s-.3-.1-.5.1-.6.7-.7.8-.3.1-.5 0a6.7 6.7 0 0 1-2-1.3 7.4 7.4 0 0 1-1.4-1.8c-.1-.2 0-.3 0-.5l.3-.4.2-.4c.1-.1 0-.3 0-.4l-.6-1.4c-.2-.5-.4-.4-.6-.4h-.5c-.2 0-.4.2-.5.4a2 2 0 0 0-.6 1.6 4 4 0 0 0 .8 2.1 9.7 9.7 0 0 0 3.7 3.6c.4.2 1 .5 1.6.6a3 3 0 0 0 1.4.1 2.2 2.2 0 0 0 1.4-1c.2-.4.2-.8.2-.9 0-.1-.2-.2-.4-.3Z" />
             </svg>
           </a>
@@ -129,13 +125,7 @@ export default async function RootLayout({
             href="#"
             className="rounded-full bg-sky-500 p-3 text-white shadow-lg transition hover:-translate-y-0.5 hover:bg-sky-600"
           >
-            <svg
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="currentColor"
-              aria-hidden="true"
-            >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
               <path d="M9.5 14.1 9.3 18c.4 0 .6-.2.8-.4l1.9-1.8 4 3c.7.4 1.2.2 1.4-.7l2.5-11c.3-1.2-.4-1.7-1.2-1.4L3.7 9c-1 .4-1 1 .2 1.4l4.5 1.4 10.4-6.6-9.3 8.9Z" />
             </svg>
           </a>

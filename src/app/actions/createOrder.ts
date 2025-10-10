@@ -10,20 +10,18 @@ import { sendMail } from "~/server/email/send";
 import NewOrderEmail from "~/emails/NewOrderEmail";
 
 const Input = z.object({
-  city: z.string().min(1, "Город обязателен"),
-  details: z.string().min(1, "Описание обязательно"),
-  date: z.string().min(1, "Дата обязательна"), // YYYY-MM-DD
+  city: z.string().trim().min(1, "Город обязателен"),
+  details: z.string().trim().min(1, "Описание обязательно"),
+  date: z.string().trim().min(1, "Дата обязательна"), // YYYY-MM-DD
+  // телефон передаём опционально из формы; можно пустым
+  phone: z.string().optional().transform((v) => (v ?? "").trim()),
 });
 
 export type CreateOrderResult =
   | { ok: true; id: string }
   | {
       ok: false;
-      error:
-        | "NOT_AUTHENTICATED"
-        | "VALIDATION_ERROR"
-        | "DB_ERROR"
-        | "RATE_LIMIT";
+      error: "NOT_AUTHENTICATED" | "VALIDATION_ERROR" | "DB_ERROR" | "RATE_LIMIT";
     };
 
 export async function createOrder(raw: unknown): Promise<CreateOrderResult> {
@@ -34,14 +32,33 @@ export async function createOrder(raw: unknown): Promise<CreateOrderResult> {
   const parsed = Input.safeParse(raw);
   if (!parsed.success) return { ok: false, error: "VALIDATION_ERROR" };
 
-  const { city, details, date } = parsed.data;
+  const { city, details, date, phone: rawPhone } = parsed.data;
 
-  // формируем dueDate; простой валидатор
+  // нормализуем телефон (+79991234567) если был передан
+  const digits = (rawPhone ?? "").replace(/\D/g, "");
+  const normalizedPhone = digits.length ? `+${digits}` : null;
+
+  // валидируем дату
   const due = new Date(`${date}T00:00:00.000Z`);
-  if (Number.isNaN(due.getTime()))
-    return { ok: false, error: "VALIDATION_ERROR" };
+  if (Number.isNaN(due.getTime())) return { ok: false, error: "VALIDATION_ERROR" };
 
   try {
+    // если передали телефон — мягко обновляем профиль пользователя
+    if (normalizedPhone) {
+      try {
+        await db.user.update({
+          where: { id: userId },
+          data: { phone: normalizedPhone },
+        });
+      } catch (e) {
+        // глушим конфликт уникальности и любые минорные ошибки
+        const code = (e as { code?: string } | null)?.code;
+        if (code !== "P2002") {
+          console.warn("[orders] user phone update skipped:", e);
+        }
+      }
+    }
+
     const order = await db.order.create({
       data: {
         userId,
