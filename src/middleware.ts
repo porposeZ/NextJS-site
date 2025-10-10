@@ -1,41 +1,47 @@
+// src/middleware.ts
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
 
-/**
- * Guard для приватных и auth-страниц.
- * Работает на edge: читаем только JWT из куки.
- */
+// Унифицированное чтение токена для v4/v5 (разные cookies)
+async function readAuthToken(req: NextRequest) {
+  const secret = process.env.AUTH_SECRET ?? process.env.NEXTAUTH_SECRET;
+
+  // next-auth v4
+  let token = await getToken({ req, secret });
+  // auth.js / next-auth v5
+  if (!token) token = await getToken({ req, secret, cookieName: "authjs.session-token" });
+  // вариант с __Secure- (на https и некоторых хостингах)
+  if (!token) token = await getToken({ req, secret, cookieName: "__Secure-authjs.session-token" });
+
+  return token;
+}
+
 export async function middleware(req: NextRequest) {
-  const token = await getToken({
-    req,
-    secret: process.env.AUTH_SECRET,
-  });
+  const token = await readAuthToken(req);
+  const { pathname } = req.nextUrl;
 
-  const { pathname, search } = req.nextUrl;
-
-  // /auth/* — если уже залогинен, то в /orders
+  // /auth/* — если уже залогинен, уводим на callbackUrl или /orders
   if (pathname.startsWith("/auth")) {
     if (token) {
       const url = req.nextUrl.clone();
-      url.pathname = "/orders";
-      url.search = search;
+      const cb = req.nextUrl.searchParams.get("callbackUrl");
+      url.pathname = cb ?? "/orders";
+      url.search = "";
       return NextResponse.redirect(url);
     }
     return NextResponse.next();
   }
 
-  // /admin/* — только админ (по email)
+  // /admin/* — только админ по email
   if (pathname.startsWith("/admin")) {
     const admin = (process.env.ADMIN_EMAIL ?? "").toLowerCase();
-    const email = (token?.email ?? "").toLowerCase();
+    const email = String((token as any)?.email ?? "").toLowerCase();
 
     if (!token) {
       const url = req.nextUrl.clone();
       url.pathname = "/auth/signin";
-      url.search = new URLSearchParams({
-        callbackUrl: "/admin/orders",
-      }).toString();
+      url.search = new URLSearchParams({ callbackUrl: "/admin/orders" }).toString();
       return NextResponse.redirect(url);
     }
 
@@ -45,11 +51,10 @@ export async function middleware(req: NextRequest) {
       url.search = "";
       return NextResponse.redirect(url);
     }
-
     return NextResponse.next();
   }
 
-  // Приватные юзер-страницы
+  // Приватные страницы для пользователя
   const isProtected =
     pathname.startsWith("/orders") ||
     pathname.startsWith("/profile") ||
@@ -58,7 +63,7 @@ export async function middleware(req: NextRequest) {
   if (isProtected && !token) {
     const url = req.nextUrl.clone();
     url.pathname = "/auth/signin";
-    const returnTo = `${pathname}${search}`;
+    const returnTo = `${pathname}${req.nextUrl.search}`;
     url.search = new URLSearchParams({ callbackUrl: returnTo }).toString();
     return NextResponse.redirect(url);
   }
@@ -67,11 +72,5 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: [
-    "/auth/:path*",
-    "/orders/:path*",
-    "/profile/:path*",
-    "/account/:path*",
-    "/admin/:path*",
-  ],
+  matcher: ["/auth/:path*", "/orders/:path*", "/profile/:path*", "/account/:path*", "/admin/:path*"],
 };
