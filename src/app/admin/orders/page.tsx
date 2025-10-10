@@ -1,3 +1,4 @@
+// src/app/admin/orders/page.tsx
 import type { Prisma } from "@prisma/client";
 import { requireAdmin } from "~/server/auth/roles";
 import { db } from "~/server/db";
@@ -17,7 +18,7 @@ const STATUSES = [
 ] as const;
 type OrderStatus = (typeof STATUSES)[number];
 
-type Search = { q?: string; status?: string; from?: string; to?: string };
+type SearchParamsDict = Record<string, string | string[] | undefined>;
 
 function norm(str: string | null | undefined) {
   return (str ?? "").toLocaleLowerCase("ru-RU");
@@ -25,19 +26,24 @@ function norm(str: string | null | undefined) {
 function onlyDigits(s: string | null | undefined) {
   return (s ?? "").replace(/\D/g, "");
 }
+function first(v: string | string[] | undefined): string | undefined {
+  return Array.isArray(v) ? v[0] : v;
+}
 
 export default async function AdminOrdersPage({
   searchParams,
 }: {
-  // В App Router это не Promise
-  searchParams?: Search;
+  // В Next 15.5 searchParams в Server Component — Promise
+  searchParams: Promise<SearchParamsDict>;
 }) {
   await requireAdmin();
 
-  const qVal = (searchParams?.q ?? "").trim();
-  const statusRaw = searchParams?.status ?? "";
-  const fromVal = searchParams?.from ?? "";
-  const toVal = searchParams?.to ?? "";
+  const sp = await searchParams;
+
+  const qVal = (first(sp.q) ?? "").trim();
+  const statusRaw = first(sp.status) ?? "";
+  const fromVal = first(sp.from) ?? "";
+  const toVal = first(sp.to) ?? "";
 
   // where без any
   const where: Prisma.OrderWhereInput = {};
