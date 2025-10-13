@@ -4,11 +4,11 @@ export default function Footer() {
   return (
     <footer className="mt-10 border-t border-slate-200 bg-white">
       <div className="mx-auto max-w-6xl px-4 py-5">
-        <div className="md:flex md:items-start md:justify-between">
-          {/* Левая колонка — реквизиты (в 2 строки, как изначально) */}
+        <div className="grid gap-8 md:grid-cols-[1fr_auto_auto] md:items-start">
+          {/* Левая колонка — реквизиты */}
           <Link
             href="/about"
-            className="block text-xs leading-6 text-slate-600 transition-colors hover:text-sky-700 md:grow md:pr-6"
+            className="block text-xs leading-6 text-slate-600 transition-colors hover:text-sky-700"
           >
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
               <span>ИП Вогоровский Максим Михайлович</span>
@@ -25,13 +25,36 @@ export default function Footer() {
             </div>
           </Link>
 
-          {/* Разделитель */}
-          <div className="my-4 hidden h-6 w-px bg-slate-200 md:my-0 md:block" />
+          {/* Средняя колонка — правовая информация */}
+          <div className="text-xs leading-5 text-slate-600">
+            <div className="mb-2 font-semibold text-slate-800">Правовая информация</div>
+            <ul className="space-y-1.5">
+              <li>
+                <Link href="/legal/terms" className="hover:text-sky-700">
+                  Пользовательское соглашение
+                </Link>
+              </li>
+              <li>
+                <Link href="/legal/privacy" className="hover:text-sky-700">
+                  Политика конфиденциальности
+                </Link>
+              </li>
+              <li>
+                <Link href="/legal/cookies" className="hover:text-sky-700">
+                  Политика cookies
+                </Link>
+              </li>
+              <li>
+                <Link href="/legal/payments" className="hover:text-sky-700">
+                  Оплата и возвраты
+                </Link>
+              </li>
+            </ul>
+          </div>
 
           {/* Правая колонка — контакты */}
-          <div className="text-xs leading-5 text-slate-600 md:w-64 md:pl-6">
+          <div className="text-xs leading-5 text-slate-600">
             <div className="mb-2 font-semibold text-slate-800">Контакты</div>
-
             <ul className="space-y-1.5">
               <li>
                 <a
@@ -42,7 +65,6 @@ export default function Footer() {
                   <span>info@yayestcorp.ru</span>
                 </a>
               </li>
-
               <li>
                 <a
                   href="tel:3912162584"
@@ -52,7 +74,6 @@ export default function Footer() {
                   <span>+7 391 216-25-84</span>
                 </a>
               </li>
-
               <li>
                 <a
                   href="tel:+79233118858"

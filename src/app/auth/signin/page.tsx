@@ -11,7 +11,6 @@ export default async function SignInPage({
 }: {
   searchParams: Promise<SearchParams>;
 }) {
-  // Уже авторизован? — уводим на callbackUrl или /orders
   const session = await getSession();
   const { callbackUrl } = await searchParams;
 
@@ -24,7 +23,6 @@ export default async function SignInPage({
     redirect(target);
   }
 
-  // Берём CSRF из куки, если уже есть
   const raw = (await cookies()).get("authjs.csrf-token")?.value ?? "";
   const initialCsrfToken = raw.includes("|") ? raw.split("|")[0] : raw;
 
@@ -37,10 +35,6 @@ export default async function SignInPage({
         </p>
 
         <SignInForm initialCsrfToken={initialCsrfToken} callbackUrl={target} />
-
-        <p className="mt-6 text-center text-xs text-slate-500">
-          Нажимая кнопку, вы соглашаетесь с обработкой персональных данных.
-        </p>
       </Card>
     </div>
   );
