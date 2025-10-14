@@ -167,11 +167,15 @@ enum ConsentKind {
 model Consent {
   id         String      @id @default(cuid())
   userId     String
+  email      String?
   kind       ConsentKind
   acceptedAt DateTime    @default(now())
   ip         String?
   userAgent  String?
   docVersion String?
+  policyAt   DateTime?
+  orderEmailsAt DateTime?
+  marketingAt DateTime?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 

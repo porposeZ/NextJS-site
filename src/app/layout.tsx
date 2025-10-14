@@ -3,6 +3,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { auth } from "~/server/auth";
 import { Button } from "~/components/ui/button";
+import ConsentAttach from "~/components/ConsentAttach"
 import SignOutButton from "~/components/SignOutButton";
 import Footer from "~/components/Footer";
 import "../styles/globals.css";
@@ -130,7 +131,7 @@ export default async function RootLayout({
             </svg>
           </a>
         </div>
-
+        <ConsentAttach />
         <Footer />
       </body>
     </html>

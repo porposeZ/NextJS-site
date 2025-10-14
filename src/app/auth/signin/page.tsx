@@ -31,7 +31,7 @@ export default async function SignInPage({
       <Card className="p-6 md:p-8">
         <h1 className="mb-4 text-2xl font-extrabold text-sky-700">Вход</h1>
         <p className="mb-6 text-slate-600">
-          Укажи email — пришлём ссылку для входа.
+          Укажи email — пришлём ссылку для входа. Перед отправкой отметь согласия ниже.
         </p>
 
         <SignInForm initialCsrfToken={initialCsrfToken} callbackUrl={target} />
