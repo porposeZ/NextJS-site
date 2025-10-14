@@ -64,8 +64,8 @@ export async function attachConsentsFromCookie(userId: string) {
   }
 
   const h = await headers();
-  if (!ip) ip = h.get("x-forwarded-for") ?? h.get("x-real-ip") ?? undefined;
-  if (!ua) ua = h.get("user-agent") ?? undefined;
+  ip ??= h.get("x-forwarded-for") ?? h.get("x-real-ip") ?? undefined;
+  ua ??= h.get("user-agent") ?? undefined;
 
   if (kinds.length) {
     await recordConsents({

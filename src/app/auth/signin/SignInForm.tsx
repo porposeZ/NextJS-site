@@ -15,14 +15,14 @@ export default function SignInForm({
   const [csrf, setCsrf] = useState(initialCsrfToken);
 
   // чекбоксы
-  const [policy, setPolicy] = useState(false);           // обязательно
-  const [orderEmails, setOrderEmails] = useState(true);  // по умолчанию включено
+  const [policy, setPolicy] = useState(false);          // обязательно
+  const [orderEmails, setOrderEmails] = useState(true); // по умолчанию включено
   const [marketing, setMarketing] = useState(false);
 
   useEffect(() => {
     if (!csrf) {
       fetch("/api/auth/csrf", { credentials: "include", cache: "no-store" })
-        .then((r) => (r.ok ? r.json() : Promise.reject()))
+        .then((r) => (r.ok ? r.json() : Promise.reject(new Error("CSRF fetch failed"))))
         .then((d: { csrfToken?: string }) => setCsrf(d?.csrfToken ?? ""))
         .catch(() => undefined);
     }
@@ -32,7 +32,9 @@ export default function SignInForm({
     e.preventDefault();
     const form = e.currentTarget;
     const fd = new FormData(form);
-    const email = String(fd.get("email") ?? "").trim().toLowerCase();
+
+    const v = fd.get("email");
+    const email = (typeof v === "string" ? v : "").trim().toLowerCase();
 
     // 1) стэш согласий в куки (на сервере — без БД)
     try {

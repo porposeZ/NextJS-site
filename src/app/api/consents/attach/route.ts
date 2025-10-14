@@ -16,12 +16,12 @@ export async function POST(_req: NextRequest) {
     return NextResponse.json({ ok: true, skipped: "anonymous" });
   }
 
-  // ⬇️ в v15 это промисы
+  // ⬇️ в v15 cookies()/headers() — промисы
   const c = await cookies();
   const hasPolicy = c.get("consent_policy")?.value === "1";
   const wantsOrders = c.get("consent_order_emails")?.value === "1";
   const wantsMarketing = c.get("consent_marketing")?.value === "1";
-  const email = c.get("consent_email")?.value || undefined;
+  const email = c.get("consent_email")?.value ?? undefined;
 
   if (!hasPolicy && !wantsOrders && !wantsMarketing) {
     return NextResponse.json({ ok: true, empty: true });
@@ -29,10 +29,10 @@ export async function POST(_req: NextRequest) {
 
   const h = await headers();
   const ip =
-    h.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-    h.get("x-real-ip") ||
+    h.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+    h.get("x-real-ip") ??
     undefined;
-  const userAgent = h.get("user-agent") || undefined;
+  const userAgent = h.get("user-agent") ?? undefined;
 
   const now = new Date();
   const DOC_VERSION = "v1.0";

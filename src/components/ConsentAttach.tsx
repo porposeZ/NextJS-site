@@ -16,9 +16,12 @@ export default function ConsentAttach() {
     const key = "consent_attach_done";
     if (sessionStorage.getItem(key)) return;
 
-    fetch("/api/consents/attach", { method: "POST" }).finally(() => {
-      sessionStorage.setItem(key, "1");
-    });
+    // Закрываем no-floating-promises: явно игнорируем результат и ловим ошибки
+    void fetch("/api/consents/attach", { method: "POST" })
+      .catch(() => undefined)
+      .finally(() => {
+        sessionStorage.setItem(key, "1");
+      });
   }, []);
 
   return null;
