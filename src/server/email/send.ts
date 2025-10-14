@@ -16,14 +16,13 @@ export async function sendMail({
   react?: React.ReactElement;
 }) {
   const result = await resend.emails.send({
-    from: `Я есть <${env.EMAIL_FROM}>`,
+    from: `Я есть <${env.EMAIL_FROM}>`, // например: login@yayest.site
     to,
     subject,
     ...(react ? { react } : { html: html ?? "" }),
   });
 
   if (result.error) {
-    // Чтобы сразу видеть причину отказа (unverified recipient, invalid from и т.д.)
     console.error("[resend] send error:", result.error);
   }
   return result;

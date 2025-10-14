@@ -69,17 +69,12 @@ export default function HomeForm({
 
   const isCompany = watch("personType") === "company";
 
-  // --- Минимально допустимая дата (с +3 дня от сегодня, т.е. "минимум за 2 дня") ---
+  // --- Минимально допустимая дата: СЕГОДНЯ (запретить прошлые даты) ---
   const { minDateISO, minDateObjRu } = useMemo(() => {
     const today = new Date();
     today.setHours(0, 0, 0, 0); // локальная полуночь
-
-    const min = new Date(today);
-    min.setDate(min.getDate() + 3); // можно с 3-го дня
-
-    // ЛОКАЛЬНОЕ форматирование (без UTC)
-    const iso = toLocalISO(min); // YYYY-MM-DD
-    const ru = min.toLocaleDateString("ru-RU"); // 09.10.2025
+    const iso = toLocalISO(today); // YYYY-MM-DD
+    const ru = today.toLocaleDateString("ru-RU"); // 14.10.2025
     return { minDateISO: iso, minDateObjRu: ru };
   }, []);
 
@@ -208,7 +203,7 @@ export default function HomeForm({
           <CityCombo control={control} name="city" placeholder="Москва" />
         </div>
 
-        {/* Дата исполнения — с ограничением минимум +3 дня */}
+        {/* Дата исполнения — минимум СЕГОДНЯ */}
         <div>
           <Label className="mb-1 block">
             Дата исполнения <span className="text-rose-500">*</span>
