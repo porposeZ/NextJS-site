@@ -10,11 +10,23 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
-// ==== Enums ====
-enum ConsentKind { privacy terms marketing }
-enum OrderStatus { new in_progress done cancelled }
+//// Enums
 
-// ==== Auth.js (PrismaAdapter) ====
+enum ConsentKind {
+  privacy
+  terms
+  marketing
+}
+
+enum OrderStatus {
+  new
+  in_progress
+  done
+  cancelled
+}
+
+//// Auth.js models
+
 model User {
   id                  String   @id @default(cuid())
   name                String?
@@ -22,22 +34,20 @@ model User {
   emailVerified       DateTime?
   image               String?
 
-  // расширения профиля
   phone               String?
   defaultCity         String?
-  organization        String?        // ← мы добавляли это поле
+  organization        String?
 
-  notifyOnStatusChange Boolean @default(true)
-  notifyOnPayment       Boolean @default(true)
+  notifyOnStatusChange Boolean  @default(true)
+  notifyOnPayment       Boolean  @default(true)
 
-  // relations
-  accounts  Account[]
-  sessions  Session[]
-  orders    Order[]
-  consents  Consent[]
+  accounts            Account[]
+  sessions            Session[]
+  orders              Order[]
+  consents            Consent[]
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
 }
 
 model Account {
@@ -55,6 +65,7 @@ model Account {
   session_state      String?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   @@unique([provider, providerAccountId])
 }
 
@@ -63,6 +74,7 @@ model Session {
   sessionToken String   @unique
   userId       String
   expires      DateTime
+
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
@@ -70,29 +82,31 @@ model VerificationToken {
   identifier String
   token      String   @unique
   expires    DateTime
+
   @@unique([identifier, token])
 }
 
-// ==== Наши модели ====
-model Consent {
-  id            String      @id @default(cuid())
-  userId        String?
-  user          User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
+//// App models
 
-  kind          ConsentKind
-  acceptedAt    DateTime    @default(now())
+model Consent {
+  id             String      @id @default(cuid())
+  userId         String?
+  user           User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  kind           ConsentKind
+  acceptedAt     DateTime    @default(now())
 
   policyAt       DateTime?
   orderEmailsAt  DateTime?
   marketingAt    DateTime?
 
-  email        String?
-  ip           String?
-  userAgent    String?
-  docVersion   String?
+  email          String?
+  ip             String?
+  userAgent      String?
+  docVersion     String?
 
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   @@index([userId, kind], name: "user_kind_idx")
 }
