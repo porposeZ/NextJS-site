@@ -1,5 +1,5 @@
 // src/app/admin/orders/page.tsx
-import type { Prisma } from "@prisma/client";
+import { Prisma, OrderStatus } from "@prisma/client";
 import { requireAdmin } from "~/server/auth/roles";
 import { db } from "~/server/db";
 import OrderCard from "./OrderCard";
@@ -9,16 +9,36 @@ import { Label } from "~/components/ui/label";
 
 export const metadata = { title: "Все заказы — Админ" };
 
-const STATUSES = [
-  "REVIEW",
-  "AWAITING_PAYMENT",
-  "IN_PROGRESS",
-  "DONE",
-  "CANCELED",
+// Статусы берём из Prisma-энама, чтобы совпадало с БД
+const STATUSES: readonly OrderStatus[] = [
+  OrderStatus.REVIEW,
+  OrderStatus.AWAITING_PAYMENT,
+  OrderStatus.IN_PROGRESS,
+  OrderStatus.DONE,
+  OrderStatus.CANCELED,
 ] as const;
-type OrderStatus = (typeof STATUSES)[number];
 
 type SearchParamsDict = Record<string, string | string[] | undefined>;
+
+/** Тип, который ждёт OrderCard */
+type OrderForCard = {
+  id: string;
+  city: string;
+  description: string;
+  createdAt: Date | string;
+  dueDate: Date | string | null;
+  status: OrderStatus;
+  user: {
+    email: string | null;
+    name: string | null;
+    phone: string | null;
+  };
+  events: {
+    id: string;
+    message: string; // строго string — без null
+    createdAt: Date | string;
+  }[];
+};
 
 function norm(str: string | null | undefined) {
   return (str ?? "").toLocaleLowerCase("ru-RU");
@@ -45,14 +65,16 @@ export default async function AdminOrdersPage({
   const fromVal = first(sp.from) ?? "";
   const toVal = first(sp.to) ?? "";
 
-  // where без any
+  // where — строго типизировано
   const where: Prisma.OrderWhereInput = {};
 
   // фильтр по статусу — только корректные значения
   const statusOk = STATUSES.includes(statusRaw as OrderStatus);
-  if (statusOk) where.status = statusRaw as OrderStatus;
+  if (statusOk) {
+    where.status = statusRaw as OrderStatus;
+  }
 
-  // фильтр по датам
+  // фильтр по датам создания
   if (fromVal || toVal) {
     const createdAt: Prisma.DateTimeFilter = {};
     if (fromVal) createdAt.gte = new Date(`${fromVal}T00:00:00.000Z`);
@@ -60,20 +82,31 @@ export default async function AdminOrdersPage({
     where.createdAt = createdAt;
   }
 
-  // Берём кандидатов одним запросом и фильтруем в памяти по кириллице
+  // ✅ Жёсткий select — берём только то, что нужно OrderCard
   const candidates = await db.order.findMany({
     where,
     orderBy: { createdAt: "desc" },
-    include: {
+    select: {
+      id: true,
+      city: true,
+      description: true, // в схеме @map("details"), но поле в Prisma — description
+      createdAt: true,
+      dueDate: true,
+      status: true,
       user: { select: { email: true, name: true, phone: true } },
-      events: { orderBy: { createdAt: "desc" }, take: 5 },
+      events: {
+        select: { id: true, message: true, createdAt: true },
+        orderBy: { createdAt: "desc" },
+        take: 5,
+      },
     },
   });
 
+  // Поиск текста и телефона делаем в памяти (из-за кириллицы/частичных совпадений)
   const needle = qVal.toLocaleLowerCase("ru-RU");
   const needleDigits = onlyDigits(qVal);
 
-  const orders = qVal
+  const filtered = qVal
     ? candidates.filter((o) => {
         const hay = [norm(o.city), norm(o.description), norm(o.user?.email), norm(o.user?.name)];
         const byText = hay.some((h) => h.includes(needle));
@@ -84,6 +117,26 @@ export default async function AdminOrdersPage({
         return byText || byPhone;
       })
     : candidates;
+
+  // ✅ Нормализуем к точному типу, который ждёт OrderCard
+  const orders: OrderForCard[] = filtered.map((o) => ({
+    id: o.id,
+    city: o.city,
+    description: o.description,
+    createdAt: o.createdAt,
+    dueDate: o.dueDate ?? null,
+    status: o.status,
+    user: {
+      email: o.user?.email ?? null,
+      name: o.user?.name ?? null,
+      phone: o.user?.phone ?? null,
+    },
+    events: (o.events ?? []).map((e) => ({
+      id: e.id,
+      message: e.message ?? "", // ← ключевая нормализация: string, не null
+      createdAt: e.createdAt,
+    })),
+  }));
 
   return (
     <div className="space-y-6">

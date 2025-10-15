@@ -1,16 +1,15 @@
+// prisma/schema.prisma
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  // В dev можно sqlite, в проде postgresql — как у тебя настроено в .env
-  provider  = env("PRISMA_PROVIDER") // "postgresql" | "sqlite"
+  provider  = "postgresql"
   url       = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
 }
 
 //// Enums
-
 enum ConsentKind {
   privacy
   terms
@@ -26,7 +25,6 @@ enum OrderStatus {
 }
 
 //// Auth.js (PrismaAdapter)
-
 model User {
   id                    String   @id @default(cuid())
   name                  String?
@@ -87,7 +85,6 @@ model VerificationToken {
 }
 
 //// App models
-
 model Consent {
   id             String      @id @default(cuid())
   userId         String?

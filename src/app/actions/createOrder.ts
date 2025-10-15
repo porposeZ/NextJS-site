@@ -13,8 +13,8 @@ import { attachConsentsFromCookie } from "~/server/consents";
 
 const Input = z.object({
   city: z.string().trim().min(1, "Город обязателен"),
-  details: z.string().trim().min(1, "Описание обязательно"),
-  date: z.string().trim().min(1, "Дата обязательна"), // YYYY-MM-DD
+  details: z.string().trim().min(1, "Описание обязательно"), // <- ИМЯ ПОЛЯ В ФОРМЕ
+  date: z.string().trim().min(1, "Дата обязательна"),         // YYYY-MM-DD
   phone: z.string().optional().transform((v) => (v ?? "").trim()),
 });
 
@@ -58,9 +58,7 @@ export async function createOrder(raw: unknown): Promise<CreateOrderResult> {
         });
       } catch (e) {
         const code = (e as { code?: string } | null)?.code;
-        if (code !== "P2002") {
-          console.warn("[orders] user phone update skipped:", e);
-        }
+        if (code !== "P2002") console.warn("[orders] user phone update skipped:", e);
       }
     }
 
@@ -68,14 +66,14 @@ export async function createOrder(raw: unknown): Promise<CreateOrderResult> {
       data: {
         userId,
         city,
-        details,                 // <-- поле в схеме называется details
-        status: OrderStatus.new, // <-- валидное значение из enum
+        description: details,     // <-- В КОДЕ ИСПОЛЬЗУЕМ description
+        status: OrderStatus.REVIEW,
         dueDate: due,
       },
       select: {
         id: true,
         city: true,
-        details: true,           // <-- выбираем details
+        description: true,        // <-- Тоже description
         createdAt: true,
         dueDate: true,
         user: { select: { email: true, name: true, phone: true } },
@@ -93,8 +91,7 @@ export async function createOrder(raw: unknown): Promise<CreateOrderResult> {
           order: {
             id: order.id,
             city: order.city,
-            // компонент письма ждёт поле description — пробрасываем из details
-            description: order.details,
+            description: order.description, // письмо ждёт description
             createdAt: order.createdAt,
             dueDate: order.dueDate ?? undefined,
           },

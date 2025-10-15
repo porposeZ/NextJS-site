@@ -14,10 +14,11 @@ import { OrderStatus } from "@prisma/client";
 
 /** Разрешённые статусы из актуального Prisma enum */
 const STATUSES: readonly OrderStatus[] = [
-  OrderStatus.new,
-  OrderStatus.in_progress,
-  OrderStatus.done,
-  OrderStatus.cancelled,
+  OrderStatus.REVIEW,
+  OrderStatus.AWAITING_PAYMENT,
+  OrderStatus.IN_PROGRESS,
+  OrderStatus.DONE,
+  OrderStatus.CANCELED,
 ] as const;
 
 /** Type guard для надёжной проверки строки */
@@ -59,39 +60,38 @@ export async function updateOrderStatus(formData: FormData) {
 
   // Письмо пользователю — по настройке notifyOnStatusChange
   try {
-    const order = await db.order.findUnique({
-      where: { id },
-      include: {
-        user: {
-          select: { email: true, name: true, notifyOnStatusChange: true },
-        },
+// ...
+const order = await db.order.findUnique({
+  where: { id },
+  include: {
+    user: {
+      select: { email: true, name: true, notifyOnStatusChange: true },
+    },
+  },
+});
+
+if (order?.user?.email && (order.user.notifyOnStatusChange ?? true)) {
+  const appUrl = env.AUTH_URL ?? env.NEXTAUTH_URL ?? "";
+  const mailStatus = status as unknown as Parameters<typeof readableStatus>[0];
+
+  await sendMail({
+    to: order.user.email,
+    subject: `Статус вашей заявки: ${readableStatus(mailStatus)}`,
+    react: React.createElement(OrderStatusChangedEmail, {
+      status: mailStatus,
+      order: {
+        id: order.id,
+        city: order.city,
+        description: (order as any).description, // <-- теперь есть типизированное поле
+        createdAt: order.createdAt,
+        dueDate: order.dueDate ?? undefined,
       },
-    });
+      appUrl,
+      userName: order.user.name ?? undefined,
+    }),
+  });
+}
 
-    if (order?.user?.email && (order.user.notifyOnStatusChange ?? true)) {
-      const appUrl = env.AUTH_URL ?? env.NEXTAUTH_URL ?? "";
-
-      const mailStatus = status as unknown as MailOrderStatus;
-
-      await sendMail({
-        to: order.user.email,
-        subject: `Статус вашей заявки: ${readableStatus(mailStatus)}`,
-        react: React.createElement(OrderStatusChangedEmail, {
-          status: mailStatus,
-          order: {
-            id: order.id,
-            city: order.city,
-            // компонент письма ждёт description; в БД у нас details
-            description:
-              (order as any).details ?? (order as any).description ?? "",
-            createdAt: order.createdAt,
-            dueDate: order.dueDate ?? undefined,
-          },
-          appUrl,
-          userName: order.user.name ?? undefined,
-        }),
-      });
-    }
   } catch (e) {
     console.warn("[email] status-changed failed:", e);
   }
