@@ -1,5 +1,6 @@
 "use server";
 
+import { OrderStatus } from "@prisma/client";
 import React from "react";
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
@@ -8,7 +9,7 @@ import { db } from "~/server/db";
 import { env } from "~/server/env";
 import { sendMail } from "~/server/email/send";
 import NewOrderEmail from "~/emails/NewOrderEmail";
-import { attachConsentsFromCookie } from "~/server/consents"; // <— добавлено
+import { attachConsentsFromCookie } from "~/server/consents";
 
 const Input = z.object({
   city: z.string().trim().min(1, "Город обязателен"),
@@ -46,7 +47,7 @@ export async function createOrder(raw: unknown): Promise<CreateOrderResult> {
     return { ok: false, error: "VALIDATION_ERROR" };
 
   try {
-    // <— привяжем согласия из куки к userId при первом "смысленном" действии
+    // привяжем согласия из куки к userId при первом осмысленном действии
     await attachConsentsFromCookie(userId);
 
     if (normalizedPhone) {
@@ -67,14 +68,14 @@ export async function createOrder(raw: unknown): Promise<CreateOrderResult> {
       data: {
         userId,
         city,
-        description: details,
-        status: "REVIEW",
+        details,                 // <-- поле в схеме называется details
+        status: OrderStatus.new, // <-- валидное значение из enum
         dueDate: due,
       },
       select: {
         id: true,
         city: true,
-        description: true,
+        details: true,           // <-- выбираем details
         createdAt: true,
         dueDate: true,
         user: { select: { email: true, name: true, phone: true } },
@@ -83,7 +84,8 @@ export async function createOrder(raw: unknown): Promise<CreateOrderResult> {
 
     const adminEmail = process.env.ADMIN_EMAIL;
     if (adminEmail) {
-      const adminLink = `${env.AUTH_URL ?? env.NEXTAUTH_URL}/admin/orders`;
+      const base = env.AUTH_URL ?? env.NEXTAUTH_URL ?? "";
+      const adminLink = `${base}/admin/orders`;
       await sendMail({
         to: adminEmail,
         subject: "Новая заявка на сайте",
@@ -91,7 +93,8 @@ export async function createOrder(raw: unknown): Promise<CreateOrderResult> {
           order: {
             id: order.id,
             city: order.city,
-            description: order.description,
+            // компонент письма ждёт поле description — пробрасываем из details
+            description: order.details,
             createdAt: order.createdAt,
             dueDate: order.dueDate ?? undefined,
           },
