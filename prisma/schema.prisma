@@ -1,11 +1,10 @@
-// prisma/schema.prisma
-
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider  = "postgresql"
+  // В dev можно sqlite, в проде postgresql — как у тебя настроено в .env
+  provider  = env("PRISMA_PROVIDER") // "postgresql" | "sqlite"
   url       = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
 }
@@ -19,35 +18,36 @@ enum ConsentKind {
 }
 
 enum OrderStatus {
-  new
-  in_progress
-  done
-  cancelled
+  REVIEW
+  AWAITING_PAYMENT
+  IN_PROGRESS
+  DONE
+  CANCELED
 }
 
-//// Auth.js models
+//// Auth.js (PrismaAdapter)
 
 model User {
-  id                  String   @id @default(cuid())
-  name                String?
-  email               String?  @unique
-  emailVerified       DateTime?
-  image               String?
+  id                    String   @id @default(cuid())
+  name                  String?
+  email                 String?  @unique
+  emailVerified         DateTime?
+  image                 String?
 
-  phone               String?
-  defaultCity         String?
-  organization        String?
+  phone                 String?
+  defaultCity           String?
+  organization          String?
 
-  notifyOnStatusChange Boolean  @default(true)
+  notifyOnStatusChange  Boolean  @default(true)
   notifyOnPayment       Boolean  @default(true)
 
-  accounts            Account[]
-  sessions            Session[]
-  orders              Order[]
-  consents            Consent[]
+  accounts              Account[]
+  sessions              Session[]
+  orders                Order[]
+  consents              Consent[]
 
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
 }
 
 model Account {
@@ -112,17 +112,30 @@ model Consent {
 }
 
 model Order {
-  id        String      @id @default(cuid())
-  userId    String
-  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id          String      @id @default(cuid())
+  userId      String
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  city      String
-  details   String
-  dueDate   DateTime
-  status    OrderStatus @default(new)
+  city        String
+  description String      @map("details") // колонка details, поле в коде — description
+  dueDate     DateTime?
+  status      OrderStatus @default(REVIEW)
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  events      OrderEvent[]
 
   @@index([userId, status])
+}
+
+model OrderEvent {
+  id        String   @id @default(cuid())
+  orderId   String
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  type      String
+  message   String?
+  createdAt DateTime @default(now())
+
+  @@index([orderId])
 }
