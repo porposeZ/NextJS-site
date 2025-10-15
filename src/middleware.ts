@@ -14,14 +14,22 @@ async function readAuthToken(req: NextRequest): Promise<JWT | null> {
 function safeInternalCallback(req: NextRequest, fallback = "/orders") {
   const cb = req.nextUrl.searchParams.get("callbackUrl");
   if (!cb) return fallback;
+
   try {
-    const u = new URL(cb, req.nextUrl.origin);
+    // базой берём ПОЛНЫЙ req.url, а не origin из nextUrl
+    const base = new URL(req.url);
+    const u = new URL(cb, base);
+
     // только свой origin и относительные пути
-    if (u.origin === req.nextUrl.origin && u.pathname.startsWith("/")) {
+    if (u.origin === base.origin && u.pathname.startsWith("/")) {
       // запрещаем возвращаться на /auth/*
-      if (!u.pathname.startsWith("/auth")) return u.pathname + u.search;
+      if (!u.pathname.startsWith("/auth")) {
+        return u.pathname + u.search;
+      }
     }
-  } catch {}
+  } catch {
+    // ignore
+  }
   return fallback;
 }
 
@@ -29,9 +37,9 @@ export async function middleware(req: NextRequest) {
   const url = req.nextUrl;
   const pathname = url.pathname;
 
-  // Служебные пути — пропускаем
+  // 1) Служебные пути — пропускаем
   if (
-    pathname.startsWith("/api/auth") ||
+    pathname.startsWith("/api/auth") || // next-auth
     pathname.startsWith("/_next") ||
     pathname === "/favicon.ico" ||
     pathname === "/robots.txt" ||
@@ -43,41 +51,42 @@ export async function middleware(req: NextRequest) {
 
   const token = await readAuthToken(req);
 
-  // Страницы авторизации
+  // 2) Страницы авторизации
   if (pathname.startsWith("/auth")) {
     if (token?.email) {
       const target = safeInternalCallback(req, "/orders");
-      return NextResponse.redirect(new URL(target, url.origin));
+      return NextResponse.redirect(new URL(target, req.url));
     }
     return NextResponse.next();
   }
 
-  // Админка
+  // 3) Админка
   if (pathname.startsWith("/admin")) {
     if (!token?.email) {
-      const login = new URL("/auth/signin", url.origin);
+      const login = new URL("/auth/signin", req.url);
       login.searchParams.set("callbackUrl", pathname + url.search);
       return NextResponse.redirect(login);
     }
     const admin = (process.env.ADMIN_EMAIL ?? "").toLowerCase();
     const email = (token.email ?? "").toLowerCase();
     if (!admin || email !== admin) {
-      return NextResponse.redirect(new URL("/", url.origin));
+      return NextResponse.redirect(new URL("/", req.url));
     }
     return NextResponse.next();
   }
 
-  // Приватные страницы
+  // 4) Приватные страницы
   const protectedPrefixes = ["/orders", "/profile", "/account"];
   if (protectedPrefixes.some((p) => pathname.startsWith(p))) {
     if (!token?.email) {
-      const login = new URL("/auth/signin", url.origin);
+      const login = new URL("/auth/signin", req.url);
       login.searchParams.set("callbackUrl", pathname + url.search);
       return NextResponse.redirect(login);
     }
     return NextResponse.next();
   }
 
+  // 5) Всё остальное — пропускаем
   return NextResponse.next();
 }
 
