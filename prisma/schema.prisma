@@ -5,37 +5,28 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = env("DATABASE_URL") // file:./db.sqlite
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 // ==== Enums ====
-
-enum ConsentKind {
-  privacy
-  terms
-  marketing
-}
-
-enum OrderStatus {
-  new
-  in_progress
-  done
-  cancelled
-}
+enum ConsentKind { privacy terms marketing }
+enum OrderStatus { new in_progress done cancelled }
 
 // ==== Auth.js (PrismaAdapter) ====
-
 model User {
-  id               String   @id @default(cuid())
-  name             String?
-  email            String?  @unique
-  emailVerified    DateTime?
-  image            String?
-  organization     String?
+  id                  String   @id @default(cuid())
+  name                String?
+  email               String?  @unique
+  emailVerified       DateTime?
+  image               String?
+
   // расширения профиля
-  phone            String?
-  defaultCity      String?
+  phone               String?
+  defaultCity         String?
+  organization        String?        // ← мы добавляли это поле
+
   notifyOnStatusChange Boolean @default(true)
   notifyOnPayment       Boolean @default(true)
 
@@ -64,7 +55,6 @@ model Account {
   session_state      String?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
   @@unique([provider, providerAccountId])
 }
 
@@ -73,7 +63,6 @@ model Session {
   sessionToken String   @unique
   userId       String
   expires      DateTime
-
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
@@ -81,12 +70,10 @@ model VerificationToken {
   identifier String
   token      String   @unique
   expires    DateTime
-
   @@unique([identifier, token])
 }
 
 // ==== Наши модели ====
-
 model Consent {
   id            String      @id @default(cuid())
   userId        String?
@@ -95,7 +82,6 @@ model Consent {
   kind          ConsentKind
   acceptedAt    DateTime    @default(now())
 
-  // когда подтверждались конкретные согласия
   policyAt       DateTime?
   orderEmailsAt  DateTime?
   marketingAt    DateTime?
