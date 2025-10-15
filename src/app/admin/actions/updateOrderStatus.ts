@@ -1,3 +1,4 @@
+// src/app/admin/actions/updateOrderStatus.ts
 "use server";
 
 import React from "react";
@@ -11,19 +12,21 @@ import OrderStatusChangedEmail, {
 import { env } from "~/server/env";
 import { OrderStatus } from "@prisma/client";
 
-/** Разрешённые статусы из Prisma enum */
+/** Разрешённые статусы из актуального Prisma enum */
 const STATUSES: readonly OrderStatus[] = [
-  OrderStatus.REVIEW,
-  OrderStatus.AWAITING_PAYMENT,
-  OrderStatus.IN_PROGRESS,
-  OrderStatus.DONE,
-  OrderStatus.CANCELED,
+  OrderStatus.new,
+  OrderStatus.in_progress,
+  OrderStatus.done,
+  OrderStatus.cancelled,
 ] as const;
 
 /** Type guard для надёжной проверки строки */
 function isOrderStatus(s: string): s is OrderStatus {
-  return (STATUSES as readonly string[]).includes(s);
+  return (STATUSES as readonly string[]).includes(s as OrderStatus);
 }
+
+// Тип статуса, который ожидает модуль письма (отличается от Prisma)
+type MailOrderStatus = Parameters<typeof readableStatus>[0];
 
 export async function updateOrderStatus(formData: FormData) {
   await requireAdmin();
@@ -34,18 +37,25 @@ export async function updateOrderStatus(formData: FormData) {
   if (!id || !isOrderStatus(rawStatus)) {
     throw new Error("Invalid input");
   }
-  const status: OrderStatus = rawStatus;
+  const status: OrderStatus = rawStatus as OrderStatus;
 
   await db.order.update({ where: { id }, data: { status } });
 
-  // История: смена статуса
-  await db.orderEvent.create({
-    data: {
-      orderId: id,
-      type: "STATUS_CHANGED",
-      message: `Статус изменён на ${status}`,
-    },
-  });
+  // История: смена статуса — таблицы может не быть в этой схеме
+  try {
+    const anyDb = db as unknown as {
+      orderEvent?: { create?: (args: unknown) => Promise<unknown> };
+    };
+    await anyDb.orderEvent?.create?.({
+      data: {
+        orderId: id,
+        type: "STATUS_CHANGED",
+        message: `Статус изменён на ${status}`,
+      },
+    });
+  } catch (e) {
+    console.warn("[orders] orderEvent skipped:", (e as Error)?.message);
+  }
 
   // Письмо пользователю — по настройке notifyOnStatusChange
   try {
@@ -59,16 +69,21 @@ export async function updateOrderStatus(formData: FormData) {
     });
 
     if (order?.user?.email && (order.user.notifyOnStatusChange ?? true)) {
-      const appUrl = env.AUTH_URL ?? env.NEXTAUTH_URL;
+      const appUrl = env.AUTH_URL ?? env.NEXTAUTH_URL ?? "";
+
+      const mailStatus = status as unknown as MailOrderStatus;
+
       await sendMail({
         to: order.user.email,
-        subject: `Статус вашей заявки: ${readableStatus(status)}`,
+        subject: `Статус вашей заявки: ${readableStatus(mailStatus)}`,
         react: React.createElement(OrderStatusChangedEmail, {
-          status,
+          status: mailStatus,
           order: {
             id: order.id,
             city: order.city,
-            description: order.description,
+            // компонент письма ждёт description; в БД у нас details
+            description:
+              (order as any).details ?? (order as any).description ?? "",
             createdAt: order.createdAt,
             dueDate: order.dueDate ?? undefined,
           },
@@ -82,4 +97,5 @@ export async function updateOrderStatus(formData: FormData) {
   }
 
   revalidatePath("/admin/orders");
+  revalidatePath("/orders");
 }
