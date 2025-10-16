@@ -16,7 +16,7 @@ export async function sendMail({
   react?: React.ReactElement;
 }) {
   const result = await resend.emails.send({
-    from: `Я есть <${env.EMAIL_FROM}>`, // например: login@yayest.site
+    from: `Я есть <${env.EMAIL_FROM}>`, // например: "noreply@yayest.site"
     to,
     subject,
     ...(react ? { react } : { html: html ?? "" }),

@@ -3,20 +3,21 @@ import type { Session } from "next-auth";
 import type { JWT } from "next-auth/jwt";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import EmailProvider from "next-auth/providers/email";
+import React from "react";
 
 import { db } from "~/server/db";
 import { env } from "~/server/env";
-
 import { sendMail } from "~/server/email/send";
 import MagicLinkEmail from "~/emails/MagicLinkEmail";
 
 const BASE_AUTH_URL = env.NEXTAUTH_URL || env.AUTH_URL;
 if (!BASE_AUTH_URL) {
-  throw new Error(
-    "Configure NEXTAUTH_URL or AUTH_URL (e.g. https://www.yayest.site)"
-  );
+  throw new Error("Configure NEXTAUTH_URL or AUTH_URL (e.g. https://www.yayest.site)");
 }
 const ALLOWED_HOST = new URL(BASE_AUTH_URL).hostname;
+
+// Любая валидная SMTP-строка, чтобы провайдер не ругался (фактически не используется)
+const DUMMY_SMTP_URL = process.env.SMTP_URL ?? "smtp://user:pass@localhost:587";
 
 export const authConfig: NextAuthConfig = {
   adapter: PrismaAdapter(db),
@@ -33,17 +34,19 @@ export const authConfig: NextAuthConfig = {
 
   providers: [
     EmailProvider({
+      server: DUMMY_SMTP_URL,     // ✅ простая строка — без типов nodemailer
       from: env.EMAIL_FROM,
-      server: process.env.SMTP_URL ?? "smtp://user:pass@localhost:587",
-      maxAge: 10 * 60, // 10 минут
+      maxAge: 10 * 60,
       async sendVerificationRequest({ identifier, url }) {
         const parsed = new URL(url);
         if (parsed.hostname !== ALLOWED_HOST) {
           throw new Error("Disallowed callback host");
         }
+
         if (process.env.NODE_ENV !== "production") {
           console.log(`[auth] Magic link for ${identifier}: ${parsed.toString()}`);
         }
+
         await sendMail({
           to: identifier,
           subject: "Вход на сайт «Я есть»",
