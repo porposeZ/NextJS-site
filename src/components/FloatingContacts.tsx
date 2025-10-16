@@ -7,7 +7,7 @@ export default function FloatingContacts() {
     <div className="fixed right-5 bottom-5 z-50 flex flex-col gap-3">
       {/* Telegram */}
       <Link
-        href="#"
+        href="https://t.me/yayestMG"
         aria-label="Написать в Telegram"
         title="Написать в Telegram"
         target="_blank"
@@ -19,7 +19,7 @@ export default function FloatingContacts() {
       </Link>
       {/* WhatsApp */}
       <Link
-        href="#"
+        href="https://wa.me/message/35FOTDGQOVZ4O1"
         aria-label="Написать в WhatsApp"
         title="Написать в WhatsApp"
         target="_blank"

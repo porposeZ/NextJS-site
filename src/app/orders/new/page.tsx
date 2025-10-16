@@ -30,7 +30,7 @@ async function createOrderAction(formData: FormData) {
     },
   });
 
-  redirect("/orders");
+  redirect("orders/thanks");
 }
 
 export default async function Page() {

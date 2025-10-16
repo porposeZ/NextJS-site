@@ -87,7 +87,7 @@ export default function UserOrderCard({ order }: { order: Order }) {
 
           {/* WhatsApp */}
           <a
-            href="#"
+            href="https://wa.me/message/35FOTDGQOVZ4O1"
             aria-label="WhatsApp"
             className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-green-500 text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-green-600"
             title="Написать в WhatsApp"
@@ -99,7 +99,7 @@ export default function UserOrderCard({ order }: { order: Order }) {
 
           {/* Telegram */}
           <a
-            href="#"
+            href="https://t.me/yayestMG"
             aria-label="Telegram"
             className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-sky-500 text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-sky-600"
             title="Написать в Telegram"

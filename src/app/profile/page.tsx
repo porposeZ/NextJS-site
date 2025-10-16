@@ -32,9 +32,6 @@ export default async function ProfilePage() {
       <Card className="p-6">
         <div className="mb-6 text-sm text-slate-600">
           Почта (логин): <b>{user?.email ?? "—"}</b>
-          <div className="text-xs text-slate-500">
-            Активных сессий: {sessions}
-          </div>
         </div>
 
         {/* Основные поля профиля */}

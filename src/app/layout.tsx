@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
-import { headers } from "next/headers"; // ← читаем nonce из middleware
+import { headers } from "next/headers";
+import Script from "next/script";
 import { auth } from "~/server/auth";
+import { env } from "~/server/env";
 import { Button } from "~/components/ui/button";
 import ConsentAttach from "~/components/ConsentAttach";
 import SignOutButton from "~/components/SignOutButton";
@@ -20,11 +22,61 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   // nonce, который поставил middleware
   const nonce = (await headers()).get("x-nonce") ?? undefined;
 
+  // включение Метрики
+  const metrikaId = env.METRIKA_ID;
+  const metrikaOn = (env.METRIKA_ENABLED ?? "true") !== "false" && !!metrikaId;
+
   return (
     <html lang="ru">
-      {/* ВАЖНО: передаём nonce в <head>, тогда Next проставит его своим inline-скриптам */}
-      <head nonce={nonce} />
+      {/* Важно: nonce попадёт в head, и Next пометит свои inline-скрипты */}
+      <head nonce={nonce}>
+        {/* ===== Yandex.Metrika (head) ===== */}
+        {metrikaOn && (
+          <Script
+            id="ym-loader"
+            strategy="afterInteractive"
+            nonce={nonce}
+            dangerouslySetInnerHTML={{
+              __html: `
+                (function(m,e,t,r,i,k,a){
+                  m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+                  m[i].l=1*new Date();
+                  for (var j = 0; j < document.scripts.length; j++) {
+                    if (document.scripts[j].src === r) { return; }
+                  }
+                  k=e.createElement(t),a=e.getElementsByTagName(t)[0];
+                  k.async=1;k.src=r;a.parentNode.insertBefore(k,a);
+                })(window, document, 'script', 'https://mc.yandex.ru/metrika/tag.js', 'ym');
+
+                ym(${metrikaId}, 'init', {
+                  ssr: true,
+                  webvisor: true,
+                  clickmap: true,
+                  ecommerce: "dataLayer",
+                  accurateTrackBounce: true,
+                  trackLinks: true
+                });
+              `,
+            }}
+          />
+        )}
+        {/* ===== /Yandex.Metrika ===== */}
+      </head>
+
       <body className="min-h-dvh flex flex-col bg-slate-50 text-slate-900 antialiased">
+        {/* noscript-пиксель — должен быть рано в body */}
+        {metrikaOn && (
+          <noscript>
+            <div>
+              <img
+                src={`https://mc.yandex.ru/watch/${metrikaId}`}
+                style={{ position: "absolute", left: "-9999px" }}
+                alt=""
+              />
+            </div>
+          </noscript>
+        )}
+
         {/* Header */}
         <header className="sticky top-0 z-50 bg-white/90 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-white/70">
           <nav className="relative mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3">
@@ -110,7 +162,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <div className="fixed right-5 bottom-5 z-40 flex flex-col gap-3">
           <a
             aria-label="WhatsApp"
-            href="#"
+            href="https://wa.me/message/35FOTDGQOVZ4O1"
             className="rounded-full bg-green-500 p-3 text-white shadow-lg transition hover:-translate-y-0.5 hover:bg-green-600"
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -119,11 +171,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           </a>
           <a
             aria-label="Telegram"
-            href="#"
+            href="https://t.me/yayestMG"
             className="rounded-full bg-sky-500 p-3 text-white shadow-lg transition hover:-translate-y-0.5 hover:bg-sky-600"
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-              <path d="M9.5 14.1 9.3 18c.4 0 .6-.2.8-.4l1.9-1.8 4 3c.7.4 1.2.2 1.4-.7l2.5-11c.3-1.2-.4-1.7-1.2-1.4L3.7 9c-1 .4-1 1 .2 1.4l4.5 1.4 10.4-6.6-9.3 8.9Z" />
+              <path d="M9.5 14.1 9.3 18c.4 0 .6-.2.8-.4l1.9-1.8 4 3c.7.4 1.2.2 1.4-.7l2.5-11c.3-1.2-.4-1.7-1.2-1.4L3.7 9c-1 .4-1 1 .2 1.4л4.5 1.4 10.4-6.6-9.3 8.9Z" />
             </svg>
           </a>
         </div>

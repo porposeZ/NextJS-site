@@ -81,23 +81,32 @@ export default function HomeForm({
   const router = useRouter();
   const [loading, setLoading] = useState(false);
 
+  // ⚠️ createOrder может сделать redirect("/thanks") и вернуть void.
+  type CreateOrderResultOrVoid = CreateOrderResult | void;
+
   const onSubmit = async (data: FormData) => {
     setLoading(true);
     try {
-      const res: CreateOrderResult = await createOrder({
+      const res: CreateOrderResultOrVoid = await createOrder({
         city: data.city,
         details: data.details,
         date: data.date,
       });
+
+      // Если server action сделал redirect — код ниже не исполнится в браузере,
+      // но на всякий случай защищаемся:
+      if (!res) return;
 
       if (!res.ok) {
         if (res.error === "NOT_AUTHENTICATED") {
           router.push("/auth/signin?callbackUrl=/");
           return;
         }
+        // Можно добавить показ ошибок в UI при желании
         return;
       }
 
+      // Успех: чистим форму
       reset({
         personType: defaultPersonType,
         fio: defaultName ?? "",
@@ -108,7 +117,9 @@ export default function HomeForm({
         date: "",
         details: "",
       });
-      router.push("/orders");
+
+      // Если экшен НЕ редиректил сам — отправим на /thanks здесь.
+      router.push("/thanks");
     } finally {
       setLoading(false);
     }
@@ -123,11 +134,7 @@ export default function HomeForm({
         {/* переключатель ФЛ/ЮЛ */}
         <div className="flex gap-6 text-sm md:col-span-2">
           <label className="flex items-center gap-2">
-            <input
-              type="radio"
-              value="individual"
-              {...register("personType")}
-            />
+            <input type="radio" value="individual" {...register("personType")} />
             Для физических лиц
           </label>
           <label className="flex items-center gap-2">
