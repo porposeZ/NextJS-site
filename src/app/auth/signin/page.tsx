@@ -1,5 +1,4 @@
 import { redirect } from "next/navigation";
-import { cookies } from "next/headers";
 import { getSession } from "~/server/auth/getSession";
 import { Card } from "~/components/ui/card";
 import SignInForm from "./SignInForm";
@@ -23,9 +22,6 @@ export default async function SignInPage({
     redirect(target);
   }
 
-  const raw = (await cookies()).get("authjs.csrf-token")?.value ?? "";
-  const initialCsrfToken = raw.includes("|") ? raw.split("|")[0] : raw;
-
   return (
     <div className="mx-auto mt-16 max-w-lg">
       <Card className="p-6 md:p-8">
@@ -34,7 +30,8 @@ export default async function SignInPage({
           Укажи email — пришлём ссылку для входа. Перед отправкой отметь согласия ниже.
         </p>
 
-        <SignInForm initialCsrfToken={initialCsrfToken} callbackUrl={target} />
+        {/* Больше не нужен никакой CSRF */}
+        <SignInForm callbackUrl={target} />
       </Card>
     </div>
   );

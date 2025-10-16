@@ -1,5 +1,6 @@
 // src/app/admin/orders/page.tsx
-import { Prisma, OrderStatus } from "@prisma/client";
+import type { Prisma } from "@prisma/client";
+import { OrderStatus } from "@prisma/client";
 import { requireAdmin } from "~/server/auth/roles";
 import { db } from "~/server/db";
 import OrderCard from "./OrderCard";
@@ -82,14 +83,14 @@ export default async function AdminOrdersPage({
     where.createdAt = createdAt;
   }
 
-  // ✅ Жёсткий select — берём только то, что нужно OrderCard
+  // Жёсткий select — только поля, нужные OrderCard
   const candidates = await db.order.findMany({
     where,
     orderBy: { createdAt: "desc" },
     select: {
       id: true,
       city: true,
-      description: true, // в схеме @map("details"), но поле в Prisma — description
+      description: true,
       createdAt: true,
       dueDate: true,
       status: true,
@@ -102,7 +103,7 @@ export default async function AdminOrdersPage({
     },
   });
 
-  // Поиск текста и телефона делаем в памяти (из-за кириллицы/частичных совпадений)
+  // Поиск текста/телефона — в памяти
   const needle = qVal.toLocaleLowerCase("ru-RU");
   const needleDigits = onlyDigits(qVal);
 
@@ -118,7 +119,7 @@ export default async function AdminOrdersPage({
       })
     : candidates;
 
-  // ✅ Нормализуем к точному типу, который ждёт OrderCard
+  // Нормализуем к точному типу OrderForCard
   const orders: OrderForCard[] = filtered.map((o) => ({
     id: o.id,
     city: o.city,
@@ -133,7 +134,7 @@ export default async function AdminOrdersPage({
     },
     events: (o.events ?? []).map((e) => ({
       id: e.id,
-      message: e.message ?? "", // ← ключевая нормализация: string, не null
+      message: e.message ?? "",
       createdAt: e.createdAt,
     })),
   }));

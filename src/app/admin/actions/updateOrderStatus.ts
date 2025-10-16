@@ -1,4 +1,3 @@
-// src/app/admin/actions/updateOrderStatus.ts
 "use server";
 
 import React from "react";
@@ -38,7 +37,9 @@ export async function updateOrderStatus(formData: FormData) {
   if (!id || !isOrderStatus(rawStatus)) {
     throw new Error("Invalid input");
   }
-  const status: OrderStatus = rawStatus as OrderStatus;
+
+  // После проверки тип уже сужен — лишних утверждений не нужно
+  const status = rawStatus;
 
   await db.order.update({ where: { id }, data: { status } });
 
@@ -60,38 +61,42 @@ export async function updateOrderStatus(formData: FormData) {
 
   // Письмо пользователю — по настройке notifyOnStatusChange
   try {
-// ...
-const order = await db.order.findUnique({
-  where: { id },
-  include: {
-    user: {
-      select: { email: true, name: true, notifyOnStatusChange: true },
-    },
-  },
-});
-
-if (order?.user?.email && (order.user.notifyOnStatusChange ?? true)) {
-  const appUrl = env.AUTH_URL ?? env.NEXTAUTH_URL ?? "";
-  const mailStatus = status as unknown as Parameters<typeof readableStatus>[0];
-
-  await sendMail({
-    to: order.user.email,
-    subject: `Статус вашей заявки: ${readableStatus(mailStatus)}`,
-    react: React.createElement(OrderStatusChangedEmail, {
-      status: mailStatus,
-      order: {
-        id: order.id,
-        city: order.city,
-        description: (order as any).description, // <-- теперь есть типизированное поле
-        createdAt: order.createdAt,
-        dueDate: order.dueDate ?? undefined,
+    // Используем select, чтобы получить строго типизированный description
+    const order = await db.order.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        city: true,
+        description: true,
+        createdAt: true,
+        dueDate: true,
+        user: {
+          select: { email: true, name: true, notifyOnStatusChange: true },
+        },
       },
-      appUrl,
-      userName: order.user.name ?? undefined,
-    }),
-  });
-}
+    });
 
+    if (order?.user?.email && (order.user.notifyOnStatusChange ?? true)) {
+      const appUrl = env.AUTH_URL ?? env.NEXTAUTH_URL ?? "";
+      const mailStatus: MailOrderStatus = status as unknown as MailOrderStatus;
+
+      await sendMail({
+        to: order.user.email,
+        subject: `Статус вашей заявки: ${readableStatus(mailStatus)}`,
+        react: React.createElement(OrderStatusChangedEmail, {
+          status: mailStatus,
+          order: {
+            id: order.id,
+            city: order.city,
+            description: order.description,
+            createdAt: order.createdAt,
+            dueDate: order.dueDate ?? undefined,
+          },
+          appUrl,
+          userName: order.user.name ?? undefined,
+        }),
+      });
+    }
   } catch (e) {
     console.warn("[email] status-changed failed:", e);
   }

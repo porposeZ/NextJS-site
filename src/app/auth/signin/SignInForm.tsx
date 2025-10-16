@@ -1,72 +1,70 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useCallback, useState, useTransition } from "react";
+import { signIn } from "next-auth/react";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 
 export default function SignInForm({
-  initialCsrfToken = "",
+  // CSRF больше не используем — подчёркиваем это префиксом "_"
+  _initialCsrfToken = "",
   callbackUrl = "/orders",
 }: {
-  initialCsrfToken?: string;
+  _initialCsrfToken?: string;
   callbackUrl?: string;
 }) {
-  const [csrf, setCsrf] = useState(initialCsrfToken);
+  const [email, setEmail] = useState("");
+  const [pending, startTransition] = useTransition();
 
-  // чекбоксы
-  const [policy, setPolicy] = useState(false);          // обязательно
-  const [orderEmails, setOrderEmails] = useState(true); // по умолчанию включено
+  // чекбоксы согласий
+  const [policy, setPolicy] = useState(false);
+  const [orderEmails, setOrderEmails] = useState(true);
   const [marketing, setMarketing] = useState(false);
 
-  useEffect(() => {
-    if (!csrf) {
-      fetch("/api/auth/csrf", { credentials: "include", cache: "no-store" })
-        .then((r) => (r.ok ? r.json() : Promise.reject(new Error("CSRF fetch failed"))))
-        .then((d: { csrfToken?: string }) => setCsrf(d?.csrfToken ?? ""))
-        .catch(() => undefined);
-    }
-  }, [csrf]);
+  const onSubmit = useCallback(
+    async (e: React.FormEvent<HTMLFormElement>) => {
+      e.preventDefault();
 
-  const onSubmit = useCallback(async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const form = e.currentTarget;
-    const fd = new FormData(form);
+      const value = email.trim().toLowerCase();
+      if (!value || !policy) return;
 
-    const v = fd.get("email");
-    const email = (typeof v === "string" ? v : "").trim().toLowerCase();
+      // 1) стэш согласий
+      try {
+        await fetch("/api/consents/stash", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            email: value,
+            consent: { policy, orderEmails, marketing },
+          }),
+        });
+      } catch {
+        /* ignore */
+      }
 
-    // 1) стэш согласий в куки (на сервере — без БД)
-    try {
-      await fetch("/api/consents/stash", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          email,
-          consent: { policy, orderEmails, marketing },
-        }),
+      // 2) стандартный вход через Auth.js
+      startTransition(() => {
+        void signIn("email", { email: value, callbackUrl, redirect: true });
       });
-    } catch {
-      /* ignore */
-    }
-
-    // 2) отправляем реальную форму входа
-    (form as HTMLFormElement).submit();
-  }, [policy, orderEmails, marketing]);
+    },
+    [email, policy, orderEmails, marketing, callbackUrl]
+  );
 
   return (
-    <form method="post" action="/api/auth/signin/email" className="grid gap-4" onSubmit={onSubmit}>
-      {/* обязательно — токен в hidden + кука уже стоит */}
-      <input type="hidden" name="csrfToken" value={csrf} />
-      {/* callbackUrl пойдёт внутрь magic-link и сработает ПОСЛЕ входа */}
-      <input type="hidden" name="callbackUrl" value={callbackUrl} />
-
+    <form className="grid gap-4" onSubmit={onSubmit}>
       <div>
         <Label>Электронная почта</Label>
-        <Input type="email" name="email" placeholder="you@mail.ru" required />
+        <Input
+          type="email"
+          name="email"
+          placeholder="you@mail.ru"
+          required
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+        />
       </div>
 
-      {/* чекбоксы согласий */}
       <div className="space-y-3 rounded-lg bg-slate-50 p-3 text-sm">
         <label className="flex items-start gap-2">
           <input
@@ -113,9 +111,9 @@ export default function SignInForm({
       <Button
         type="submit"
         className="bg-orange-500 hover:bg-orange-600"
-        disabled={!csrf || !policy}
+        disabled={!policy || !email || pending}
       >
-        Получить ссылку
+        {pending ? "Отправляем ссылку..." : "Получить ссылку"}
       </Button>
     </form>
   );
