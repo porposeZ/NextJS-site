@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
+import { headers } from "next/headers"; // ← читаем nonce из middleware
 import { auth } from "~/server/auth";
 import { Button } from "~/components/ui/button";
-import ConsentAttach from "~/components/ConsentAttach"
+import ConsentAttach from "~/components/ConsentAttach";
 import SignOutButton from "~/components/SignOutButton";
 import Footer from "~/components/Footer";
 import "../styles/globals.css";
@@ -13,16 +14,16 @@ export const metadata: Metadata = {
   description: "Поручения и небольшие задачи в любом городе России",
 };
 
-export default async function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();
+
+  // nonce, который поставил middleware
+  const nonce = (await headers()).get("x-nonce") ?? undefined;
 
   return (
     <html lang="ru">
-      {/* ✨ ключевая правка: колонка на всю высоту */}
+      {/* ВАЖНО: передаём nonce в <head>, тогда Next проставит его своим inline-скриптам */}
+      <head nonce={nonce} />
       <body className="min-h-dvh flex flex-col bg-slate-50 text-slate-900 antialiased">
         {/* Header */}
         <header className="sticky top-0 z-50 bg-white/90 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-white/70">
@@ -60,17 +61,14 @@ export default async function RootLayout({
                 </>
               ) : (
                 <Link href="/auth/signin">
-                  <Button
-                    size="sm"
-                    className="bg-orange-500 transition-colors hover:bg-orange-600"
-                  >
+                  <Button size="sm" className="bg-orange-500 transition-colors hover:bg-orange-600">
                     Войти
                   </Button>
                 </Link>
               )}
             </div>
 
-            {/* Контакты — закреплены справа за пределами сетки */}
+            {/* Контакты справа */}
             <div className="absolute top-1/2 right-[-180px] flex -translate-y-1/2 flex-col items-start gap-1 text-xs leading-tight text-slate-700">
               <ul className="space-y-1.5">
                 <li>
@@ -82,7 +80,6 @@ export default async function RootLayout({
                     <span>info@yayestcorp.ru</span>
                   </a>
                 </li>
-
                 <li>
                   <a
                     href="tel:3912162584"
@@ -92,7 +89,6 @@ export default async function RootLayout({
                     <span>+7 391 216-25-84</span>
                   </a>
                 </li>
-
                 <li>
                   <a
                     href="tel:+79233118858"
@@ -107,10 +103,10 @@ export default async function RootLayout({
           </nav>
         </header>
 
-        {/* ✨ ключевая правка: растягиваем контент, чтобы футер ушёл к низу */}
+        {/* Контент растягиваем, чтобы футер был снизу */}
         <main className="flex-1 mx-auto w-full max-w-6xl px-4 py-10">{children}</main>
 
-        {/* Floating socials (как было) */}
+        {/* Floating socials */}
         <div className="fixed right-5 bottom-5 z-40 flex flex-col gap-3">
           <a
             aria-label="WhatsApp"
@@ -131,6 +127,7 @@ export default async function RootLayout({
             </svg>
           </a>
         </div>
+
         <ConsentAttach />
         <Footer />
       </body>
