@@ -268,7 +268,7 @@ export default function HomeForm({
           <Textarea
             rows={5}
             {...register("details", { required: "Опишите задачу" })}
-            placeholder="Что нужно сделать поручителю?"
+            placeholder="Что нужно сделать исполнителю?"
           />
           {errors.details && (
             <p className="mt-1 text-xs text-rose-600">
