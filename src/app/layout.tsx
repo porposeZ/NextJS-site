@@ -1,3 +1,4 @@
+// app/layout.tsx
 import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
@@ -11,9 +12,41 @@ import SignOutButton from "~/components/SignOutButton";
 import Footer from "~/components/Footer";
 import "../styles/globals.css";
 
+const siteUrl = (env.AUTH_URL ?? env.NEXTAUTH_URL ?? "https://www.yayest.site").replace(/\/$/, "");
+const siteName = "Я есть";
+const siteTitle = "Свой человек в другом городе | Выполним задачи для физических и юридических лиц";
+const siteDescription =
+  "Каждый помощник проходит отбор: анкета, репутация, реальные задания. Оставляем только надёжных. Гарантия и скорость. Назначаем менеджера, контролируем сроки и качество.";
+
+// ---- SEO / Metadata ----
 export const metadata: Metadata = {
-  title: { default: "Я есть", template: "%s — Я есть" },
-  description: "Поручения и небольшие задачи в любом городе России",
+  metadataBase: new URL(siteUrl),
+  title: {
+    default: siteTitle,
+    template: "%s — Я есть",
+  },
+  description: siteDescription,
+  alternates: { canonical: siteUrl },
+  openGraph: {
+    type: "website",
+    url: siteUrl,
+    siteName,
+    title: siteTitle,
+    description: siteDescription,
+    images: [{ url: "/logo/logo.png" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: siteTitle,
+    description: siteDescription,
+    images: ["/logo/logo.png"],
+  },
+  icons: {
+    icon: "/logo/logo.png",
+    shortcut: "/logo/logo.png",
+    apple: "/logo/logo.png",
+  },
+  themeColor: "#0ea5e9",
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
@@ -22,15 +55,54 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   // nonce, который поставил middleware
   const nonce = (await headers()).get("x-nonce") ?? undefined;
 
-  // включение Метрики
+  // включение Метрики из .env
   const metrikaId = env.METRIKA_ID;
   const metrikaOn = (env.METRIKA_ENABLED ?? "true") !== "false" && !!metrikaId;
+
+  // JSON-LD: Organization + WebSite (+ Sitelinks Search Box)
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Organization",
+        "@id": `${siteUrl}#org`,
+        name: siteName,
+        url: siteUrl,
+        logo: `${siteUrl}/logo/logo.png`,
+        contactPoint: [
+          { "@type": "ContactPoint", telephone: "+7-391-216-25-84", contactType: "customer service", areaServed: "RU" },
+          { "@type": "ContactPoint", telephone: "+7-923-311-88-58", contactType: "customer service", areaServed: "RU" },
+        ],
+      },
+      {
+        "@type": "WebSite",
+        "@id": `${siteUrl}#website`,
+        url: siteUrl,
+        name: siteName,
+        publisher: { "@id": `${siteUrl}#org` },
+        potentialAction: {
+          "@type": "SearchAction",
+          target: `${siteUrl}/?q={search_term_string}`,
+          "query-input": "required name=search_term_string",
+        },
+      },
+    ],
+  };
 
   return (
     <html lang="ru">
       {/* Важно: nonce попадёт в head, и Next пометит свои inline-скрипты */}
       <head nonce={nonce}>
-        {/* ===== Yandex.Metrika (head) ===== */}
+        {/* ---- JSON-LD ---- */}
+        <Script
+          id="jsonld-base"
+          type="application/ld+json"
+          nonce={nonce}
+          strategy="afterInteractive"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+
+        {/* ---- Yandex.Metrika (loader) ---- */}
         {metrikaOn && (
           <Script
             id="ym-loader"
@@ -60,7 +132,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             }}
           />
         )}
-        {/* ===== /Yandex.Metrika ===== */}
+        {/* ---- /Yandex.Metrika ---- */}
       </head>
 
       <body className="min-h-dvh flex flex-col bg-slate-50 text-slate-900 antialiased">
@@ -106,9 +178,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
               {session?.user?.id ? (
                 <>
-                  <span className="hidden text-xs text-slate-500 md:inline">
-                    {session.user.email}
-                  </span>
+                  <span className="hidden text-xs text-slate-500 md:inline">{session.user.email}</span>
                   <SignOutButton />
                 </>
               ) : (
@@ -158,11 +228,13 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         {/* Контент растягиваем, чтобы футер был снизу */}
         <main className="flex-1 mx-auto w-full max-w-6xl px-4 py-10">{children}</main>
 
-        {/* Floating socials */}
+        {/* Плавающие соц-кнопки */}
         <div className="fixed right-5 bottom-5 z-40 flex flex-col gap-3">
           <a
             aria-label="WhatsApp"
             href="https://wa.me/message/35FOTDGQOVZ4O1"
+            target="_blank"
+            rel="noopener noreferrer"
             className="rounded-full bg-green-500 p-3 text-white shadow-lg transition hover:-translate-y-0.5 hover:bg-green-600"
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -172,10 +244,12 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           <a
             aria-label="Telegram"
             href="https://t.me/yayestMG"
+            target="_blank"
+            rel="noopener noreferrer"
             className="rounded-full bg-sky-500 p-3 text-white shadow-lg transition hover:-translate-y-0.5 hover:bg-sky-600"
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-              <path d="M9.5 14.1 9.3 18c.4 0 .6-.2.8-.4l1.9-1.8 4 3c.7.4 1.2.2 1.4-.7l2.5-11c.3-1.2-.4-1.7-1.2-1.4L3.7 9c-1 .4-1 1 .2 1.4л4.5 1.4 10.4-6.6-9.3 8.9Z" />
+              <path d="M9.5 14.1 9.3 18c.4 0 .6-.2.8-.4l1.9-1.8 4 3c.7.4 1.2.2 1.4-.7l2.5-11c.3-1.2-.4-1.7-1.2-1.4L3.7 9c-1 .4-1 1 .2 1.4l4.5 1.4 10.4-6.6-9.3 8.9Z" />
             </svg>
           </a>
         </div>

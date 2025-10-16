@@ -146,3 +146,16 @@
     transform: translateX(-50%);
   }
 }
+
+/* Абстрактный фон для всего сайта */
+:root {
+  --page-bg: url("/brand/yayest-bg.svg");
+}
+
+html, body {
+  background-image: var(--page-bg);
+  background-repeat: no-repeat;
+  background-size: cover;         /* можно '120% auto' если хочется чуть крупнее */
+  background-attachment: fixed;   /* приятный параллакс */
+  background-position: center top;
+}
