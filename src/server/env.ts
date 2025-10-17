@@ -21,19 +21,30 @@ export const env = createEnv({
     AUTH_TRUST_HOST: z.enum(["true", "false"]).default("false"),
     AUTH_SECRET: z.string().min(1),
 
-    // SMTP (опционально; оставляем для совместимости)
+    // SMTP (опционально)
     SMTP_HOST: z.string().optional(),
     SMTP_PORT: z.coerce.number().optional(),
     SMTP_USER: z.string().optional(),
     SMTP_PASS: z.string().optional(),
 
     // 🔹 Яндекс.Метрика
-    METRIKA_ID: z.string().optional(),                     // например "104653739"
-    METRIKA_ENABLED: z.enum(["true", "false"]).optional(), // "true" чтобы включить
+    METRIKA_ID: z.string().optional(),
+    METRIKA_ENABLED: z.enum(["true", "false"]).optional(),
+
+    // 🔹 Платежи (T-Bank / Tinkoff)
+    // используем подпись Token по паролю терминала:
+    TINKOFF_TERMINAL_KEY: z.string().optional(),
+    TINKOFF_TERMINAL_PASSWORD: z.string().optional(),
+
+    // оставим для совместимости (не обязательно)
+    TINKOFF_API_TOKEN: z.string().optional(),
+
+    PAYMENTS_SUCCESS_URL: z.string().url().optional(),
+    PAYMENTS_FAIL_URL: z.string().url().optional(),
   },
 
   client: {
-    // ничего не пробрасываем на клиент, читаем в серверных компонентов/скриптах
+    // ничего не пробрасываем на клиент
   },
 
   runtimeEnv: {
@@ -59,6 +70,13 @@ export const env = createEnv({
     // Метрика
     METRIKA_ID: process.env.METRIKA_ID,
     METRIKA_ENABLED: process.env.METRIKA_ENABLED,
+
+    // Платежи
+    TINKOFF_TERMINAL_KEY: process.env.TINKOFF_TERMINAL_KEY,
+    TINKOFF_TERMINAL_PASSWORD: process.env.TINKOFF_TERMINAL_PASSWORD,
+    TINKOFF_API_TOKEN: process.env.TINKOFF_API_TOKEN, // можно не задавать
+    PAYMENTS_SUCCESS_URL: process.env.PAYMENTS_SUCCESS_URL,
+    PAYMENTS_FAIL_URL: process.env.PAYMENTS_FAIL_URL,
   },
 
   skipValidation: !!process.env.SKIP_ENV_VALIDATION,

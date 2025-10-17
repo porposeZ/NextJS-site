@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
 import type { JWT } from "next-auth/jwt";
+import { env } from "./server/env";
 
 /** читаем JWT из cookie (Auth.js v4/v5) */
 async function readAuthToken(req: NextRequest): Promise<JWT | null> {
@@ -29,39 +30,63 @@ function safeInternalCallback(req: NextRequest, fallback = "/orders") {
   return fallback;
 }
 
+/** домены T-Bank, которые нужно разрешить в CSP при включённых платежах */
+const T_DOMAINS = [
+  "*.tinkoff.ru",
+  "*.tcsbank.ru",
+  "*.tbank.ru",
+  "*.nspk.ru",
+  "*.t-static.ru",
+];
+
+/** собираем CSP c учётом платежей */
+function buildCsp(nonce: string) {
+  // базовый набор
+  const directives: Record<string, string> = {
+    "default-src": `'self'`,
+    "script-src": `'self' 'strict-dynamic' 'nonce-${nonce}' https: http:`,
+    "style-src": `'self' 'unsafe-inline'`,
+    "img-src": `* data: blob:`,
+    "connect-src": `*`,
+    "font-src": `'self' data:`,
+    // ВАЖНО: когда платежи выключены — можно оставить frame-src,
+    // но при iframe-оплате эту директиву иметь НЕЛЬЗЯ (ломает 3DS).
+    "frame-src": `*`,
+    // при желании можно вернуть base-uri/form-action/object-src и т.д.
+  };
+
+  // если включены платежи — расширяем и убираем frame-src
+  if (env.TINKOFF_TERMINAL_KEY) {
+    const add = ` https://${T_DOMAINS.join(" https://")}`;
+    directives["script-src"] += add;
+    directives["img-src"] += add;
+    directives["connect-src"] += add;
+    directives["style-src"] += add;
+
+    // критично: директиву frame-src удаляем целиком
+    delete directives["frame-src"];
+  }
+
+  // собираем строку
+  return Object.entries(directives)
+    .map(([k, v]) => `${k} ${v}`)
+    .join("; ");
+}
+
 export async function middleware(req: NextRequest) {
   const { pathname, search } = req.nextUrl;
 
-  // Генерим nonce на каждый запрос (edge runtime поддерживает crypto.randomUUID)
+  // Генерим nonce на каждый запрос (в edge runtime crypto доступен глобально)
   const nonce = crypto.randomUUID();
 
   // Хелпер: проставляем CSP и nonce в ответ
   const withCSP = (res: NextResponse) => {
-    // прокидываем nonce в рендер (layout его прочитает)
     res.headers.set("x-nonce", nonce);
-
-    // строгая CSP: никаких inline-скриптов, кроме наших с nonce
-    const csp = [
-      "default-src 'self'",
-      // strict-dynamic + nonce: Next/React инлайны будут работать, остальное — только доверенные
-      `script-src 'self' 'strict-dynamic' 'nonce-${nonce}' https: http:`,
-      "style-src 'self' 'unsafe-inline'",
-      "img-src * data: blob:",
-      "connect-src *",
-      "font-src 'self' data:",
-      "frame-src *",
-      // опционально:
-      // "base-uri 'self'",
-      // "form-action 'self'",
-      // "object-src 'none'",
-      // "upgrade-insecure-requests",
-    ].join("; ");
-
-    res.headers.set("Content-Security-Policy", csp);
+    res.headers.set("Content-Security-Policy", buildCsp(nonce));
     return res;
   };
 
-  // Служебные пути — просто пропускаем, но CSP тоже ставим (кроме _next/static/_image по config.matcher)
+  // Служебные пути — пропускаем, но CSP тоже ставим (кроме исключений из matcher)
   if (
     pathname.startsWith("/api/auth") ||
     pathname.startsWith("/_next") ||

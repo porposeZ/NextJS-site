@@ -38,10 +38,29 @@ export async function updateOrderStatus(formData: FormData) {
     throw new Error("Invalid input");
   }
 
+  // цена может прийти из инпута как строка
+  const rawPrice = (formData.get("price") as string | null) ?? "";
+  const price =
+    rawPrice.trim() === "" ? undefined : Number.isFinite(Number(rawPrice)) ? Math.floor(Number(rawPrice)) : NaN;
+
+  // Если переводим в "Ждёт оплаты" — цена обязательна и > 0
+  if (rawStatus === "AWAITING_PAYMENT") {
+    if (typeof price !== "number" || !Number.isFinite(price) || price <= 0) {
+      throw new Error("PRICE_REQUIRED");
+    }
+  }
+
   // После проверки тип уже сужен — лишних утверждений не нужно
   const status = rawStatus;
 
-  await db.order.update({ where: { id }, data: { status } });
+  // Обновляем заказ: статус + (при AWAITING_PAYMENT) цена в budget
+  await db.order.update({
+    where: { id },
+    data: {
+      status,
+      ...(status === "AWAITING_PAYMENT" ? { budget: price } : {}),
+    },
+  });
 
   // История: смена статуса — таблицы может не быть в этой схеме
   try {
@@ -52,7 +71,10 @@ export async function updateOrderStatus(formData: FormData) {
       data: {
         orderId: id,
         type: "STATUS_CHANGED",
-        message: `Статус изменён на ${status}`,
+        message:
+          status === "AWAITING_PAYMENT" && typeof price === "number"
+            ? `Статус изменён на ${status}. Назначена стоимость ${price} ₽`
+            : `Статус изменён на ${status}`,
       },
     });
   } catch (e) {
@@ -101,6 +123,9 @@ export async function updateOrderStatus(formData: FormData) {
     console.warn("[email] status-changed failed:", e);
   }
 
+  // Обновим и админку, и пользовательские заказы
   revalidatePath("/admin/orders");
   revalidatePath("/orders");
+
+  return { ok: true as const };
 }

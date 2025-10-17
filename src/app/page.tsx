@@ -20,25 +20,25 @@ export default async function HomePage() {
   };
 
   if (session?.user?.id) {
-    const u = await db.user.findUnique({
-      where: { id: session.user.id },
-      select: {
-        phone: true,
-        name: true,
-        defaultCity: true,
-        organization: true,
-      },
-    });
+  const u = await db.user.findUnique({
+    where: { id: session.user.id },
+    select: {
+      phone: true,
+      name: true,
+      defaultCity: true,
+      organization: true,
+    },
+  });
 
-    defaults = {
-      email: session.user.email ?? "",
-      phone: u?.phone ?? "",
-      name: u?.name ?? "",
-      city: u?.defaultCity ?? "",
-      organization: u?.organization ?? "",
-      personType: u?.organization ? "company" : "individual",
-    };
-  }
+  defaults = {
+    email: session.user.email ?? "",
+    phone: u?.phone ?? "",
+    name: u?.name ?? "",
+    city: u?.defaultCity ?? "",
+    organization: u?.organization ?? "",
+    personType: u?.organization ? "company" : "individual",
+  };
+}
 
   return (
     <div className="space-y-12">

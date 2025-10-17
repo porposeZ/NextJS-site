@@ -1,15 +1,11 @@
+// src/app/orders/UserOrderCard.tsx
 "use client";
 
-import { useTransition } from "react";
+import { useTransition, useMemo } from "react";
 import { Button } from "~/components/ui/button";
-import { startPayment } from "./actions/startPayment";
+import { startPayment, type StartPaymentResult } from "./actions/startPayment";
 
-type OrderStatus =
-  | "REVIEW"
-  | "AWAITING_PAYMENT"
-  | "IN_PROGRESS"
-  | "DONE"
-  | "CANCELED";
+type OrderStatus = "REVIEW" | "AWAITING_PAYMENT" | "IN_PROGRESS" | "DONE" | "CANCELED";
 
 type Order = {
   id: string;
@@ -17,6 +13,7 @@ type Order = {
   description: string;
   status: OrderStatus;
   createdAt: string | Date;
+  budget?: number | null; // <— показываем цену, которую админ назначил
 };
 
 const STATUS_RU: Record<OrderStatus, string> = {
@@ -35,25 +32,45 @@ const STATUS_CLASS: Record<OrderStatus, string> = {
   CANCELED: "bg-rose-100 text-rose-700",
 };
 
+const fRub = new Intl.NumberFormat("ru-RU", {
+  style: "currency",
+  currency: "RUB",
+  maximumFractionDigits: 0,
+});
+
 export default function UserOrderCard({ order }: { order: Order }) {
   const [isPending, start] = useTransition();
 
-  const pay = () => {
-    const fd = new FormData();
-    fd.set("orderId", order.id);
-    // единственный метод оплаты сейчас — ЮKassa
-    fd.set("paymentMethod", "yookassa");
+  const amountRub: number | null = useMemo(() => {
+    return typeof order.budget === "number" && order.budget > 0 ? order.budget : null;
+  }, [order.budget]);
 
-    // Ничего НЕ возвращаем из коллбэка -> ошибок типизации не будет
-    start(() => {
-      void startPayment(fd);
+  const pay = () => {
+    start(async () => {
+      try {
+        const fd = new FormData();
+        fd.set("orderId", order.id);
+        // пока один метод — помечаем внутренним маркером
+        fd.set("paymentMethod", "yookassa");
+
+        const res = (await startPayment(fd)) as StartPaymentResult;
+
+        if (!res.ok) {
+          console.warn("[startPayment] failed:", res.error);
+          alert("Не удалось инициировать оплату. Попробуйте позже.");
+          return;
+        }
+
+        // Перенаправление на платёжную страницу
+        window.location.href = res.paymentUrl;
+      } catch (e) {
+        console.error("[pay] unexpected error:", e);
+        alert("Произошла ошибка при запуске оплаты.");
+      }
     });
   };
 
-  const createdAt =
-    typeof order.createdAt === "string"
-      ? new Date(order.createdAt)
-      : order.createdAt;
+  const createdAt = typeof order.createdAt === "string" ? new Date(order.createdAt) : order.createdAt;
 
   return (
     <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -71,16 +88,12 @@ export default function UserOrderCard({ order }: { order: Order }) {
       </div>
 
       {/* Описание */}
-      <div className="text-sm leading-relaxed whitespace-pre-wrap text-slate-800">
-        {order.description}
-      </div>
+      <div className="whitespace-pre-wrap text-sm leading-relaxed text-slate-800">{order.description}</div>
 
       {/* Дата */}
-      <div className="mt-3 text-xs text-slate-500">
-        Создано: {createdAt.toLocaleString()}
-      </div>
+      <div className="mt-3 text-xs text-slate-500">Создано: {createdAt.toLocaleString()}</div>
 
-      {/* Контакты по заявке */}
+      {/* Контакты по заявке + кнопка оплаты */}
       <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2 text-sm text-slate-600">
           <span className="mr-1">Связаться по заявке:</span>
@@ -105,20 +118,27 @@ export default function UserOrderCard({ order }: { order: Order }) {
             title="Написать в Telegram"
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M9.5 14.1 9.3 18c.4 0 .6-.2.8-.4l1.9-1.8 4 3c.7.4 1.2.2 1.4-.7l2.5-11c.3-1.2-.4-1.7-1.2-1.4L3.7 9c-1 .4-1 1 .2 1.4l4.5 1.4 10.4-6.6-9.3 8.9Z" />
+              <path d="M9.5 14.1 9.3 18c.4 0 .6-.2.8-.4l1.9-1.8 4 3c.7.4 1.2.2 1.4-.7l2.5-11c.3-1.2-.4-1.7-1.2-1.4L3.7 9c-1 .4-1 1 .2 1.4л4.5 1.4 10.4-6.6-9.3 8.9Z" />
             </svg>
           </a>
         </div>
 
-        {/* Кнопка оплаты — только один способ, показывается ТОЛЬКО если ждём оплаты */}
         {order.status === "AWAITING_PAYMENT" && (
-          <Button
-            onClick={pay}
-            disabled={isPending}
-            className="bg-orange-500 hover:bg-orange-600"
-          >
-            {isPending ? "Переходим к оплате..." : "Оплатить"}
-          </Button>
+          <div className="flex items-center gap-3">
+            {amountRub && (
+              <span className="text-sm font-medium text-slate-700">
+                К оплате: <span className="text-slate-900">{fRub.format(amountRub)}</span>
+              </span>
+            )}
+            <Button
+              onClick={pay}
+              disabled={isPending}
+              aria-busy={isPending}
+              className="bg-orange-500 hover:bg-orange-600"
+            >
+              {isPending ? "Переходим к оплате..." : "Оплатить"}
+            </Button>
+          </div>
         )}
       </div>
     </div>
