@@ -10,17 +10,40 @@ type StartPaymentOk = { ok: true; paymentUrl: string; paymentId?: string };
 type StartPaymentFail = { ok: false; error: string };
 export type StartPaymentResult = StartPaymentOk | StartPaymentFail;
 
+const P1017 = "P1017";
+
+/** Короткий ретрай, если БД оборвала коннект (Prisma P1017) */
+async function withDbRetry<T>(fn: () => Promise<T>, attempts = 2): Promise<T> {
+  let last: unknown;
+  for (let i = 0; i < attempts; i++) {
+    try {
+      return await fn();
+    } catch (e: any) {
+      last = e;
+      const code = e?.code ?? e?.meta?.code;
+      const msg: string = e?.message ?? "";
+      if (code !== P1017 && !msg.includes(P1017)) break;
+      try {
+        await db.$connect();
+      } catch {}
+      await new Promise((r) => setTimeout(r, 150));
+    }
+  }
+  throw last;
+}
+
 /**
  * Старт оплаты со стороны пользователя.
  * Ждёт:
  *  - orderId: string
  *  - paymentMethod: "yookassa" | "card"   (внутренний маркер)
  */
-export async function startPayment(
-  formData: FormData
-): Promise<StartPaymentResult> {
+export async function startPayment(formData: FormData): Promise<StartPaymentResult> {
   const session = await auth();
   if (!session?.user?.id) return { ok: false, error: "NOT_AUTHENTICATED" };
+
+  // ВАЖНО: сохранить userId до входа в колбэки, иначе TS не видит сужение null
+  const userId = session.user!.id;
 
   const orderId = (formData.get("orderId") as string | null) ?? "";
   const paymentMethod = (formData.get("paymentMethod") as string | null) ?? "";
@@ -29,15 +52,19 @@ export async function startPayment(
   }
 
   // Проверяем, что заказ принадлежит текущему пользователю
-  const order = await db.order.findFirst({
-    where: { id: orderId, userId: session.user.id },
-    select: { id: true, description: true, budget: true },
+  const order = await withDbRetry(() =>
+    db.order.findFirst({
+      where: { id: orderId, userId },
+      select: { id: true, description: true, budget: true },
+    })
+  ).catch((e) => {
+    console.error("[startPayment] db error:", e);
+    return null;
   });
-  if (!order) return { ok: false, error: "ORDER_NOT_FOUND" };
+  if (!order) return { ok: false, error: "ORDER_NOT_FOUND_OR_DB_ERROR" };
 
   // Сумма: из budget (в рублях) или дефолт 100 ₽
-  const amountRub =
-    typeof order.budget === "number" && order.budget > 0 ? order.budget : 100;
+  const amountRub = typeof order.budget === "number" && order.budget > 0 ? order.budget : 100;
   const amountKopeks = Math.round(amountRub * 100);
 
   // Абсолютный базовый URL (важно в проде)
@@ -56,8 +83,7 @@ export async function startPayment(
       body: JSON.stringify({
         orderId: order.id,
         amountKopeks,
-        description:
-          (order.description ?? "").slice(0, 140) || "Оплата заказа",
+        description: (order.description ?? "").slice(0, 140) || "Оплата заказа",
       }),
       cache: "no-store",
     });
@@ -65,18 +91,15 @@ export async function startPayment(
     let data: any = null;
     try {
       data = await r.json();
-    } catch {
-      /* ignore */
-    }
+    } catch {}
 
     if (!r.ok || !data?.ok || !data.paymentUrl) {
       return {
         ok: false,
-        error: data?.error ?? `INIT_FAILED_${r.status}`, // ← были потеряны backticks
+        error: data?.error ?? `INIT_FAILED_${r.status}`,
       };
     }
 
-    // Пусть список заказов обновится «на всякий»
     revalidatePath("/orders");
 
     return {

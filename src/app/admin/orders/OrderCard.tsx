@@ -1,18 +1,21 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
 import { Card } from "~/components/ui/card";
 import { Button } from "~/components/ui/button";
 import { updateOrderStatus } from "../actions/updateOrderStatus";
 import StatusBadge from "~/components/StatusBadge";
 
+type OrderStatus = "REVIEW" | "AWAITING_PAYMENT" | "IN_PROGRESS" | "DONE" | "CANCELED";
+
 type Order = {
   id: string;
   city: string;
   description: string;
-  status: "REVIEW" | "AWAITING_PAYMENT" | "IN_PROGRESS" | "DONE" | "CANCELED";
+  status: OrderStatus;
   createdAt: string | Date;
   dueDate?: string | Date | null;
+  budget?: number | null; // ← текущая назначенная цена, ₽
   user?: {
     email?: string | null;
     name?: string | null;
@@ -29,14 +32,25 @@ const STATUSES = [
   { v: "CANCELED", label: "CANCELED" },
 ] as const;
 
+const fRub = new Intl.NumberFormat("ru-RU", { style: "currency", currency: "RUB", maximumFractionDigits: 0 });
+
 export default function OrderCard({ order }: { order: Order }) {
   const [status, setStatus] = useState<Order["status"]>(order.status);
+  const [price, setPrice] = useState<string>(order.budget ? String(order.budget) : "");
   const [isPending, startTransition] = useTransition();
+
+  const showPrice = status === "AWAITING_PAYMENT";
+
+  const budgetText = useMemo(() => {
+    if (typeof order.budget === "number" && order.budget > 0) return fRub.format(order.budget);
+    return null;
+  }, [order.budget]);
 
   async function submit(nextStatus: Order["status"]) {
     const fd = new FormData();
     fd.set("id", order.id);
     fd.set("status", nextStatus);
+    if (showPrice) fd.set("price", price.trim());
     await updateOrderStatus(fd);
   }
 
@@ -47,9 +61,7 @@ export default function OrderCard({ order }: { order: Order }) {
         <StatusBadge status={order.status} />
       </div>
 
-      <div className="mt-2 text-sm whitespace-pre-wrap">
-        {order.description}
-      </div>
+      <div className="mt-2 whitespace-pre-wrap text-sm">{order.description}</div>
 
       <div className="mt-3 grid gap-1 text-xs text-slate-600">
         <div>
@@ -70,6 +82,11 @@ export default function OrderCard({ order }: { order: Order }) {
         <div>
           <b>ID:</b> {order.id}
         </div>
+        {budgetText && (
+          <div>
+            <b>Назначено ранее:</b> {budgetText}
+          </div>
+        )}
       </div>
 
       {order.events && order.events.length > 0 && (
@@ -85,18 +102,37 @@ export default function OrderCard({ order }: { order: Order }) {
         </div>
       )}
 
-      <div className="mt-4 flex items-center gap-2">
-        <select
-          value={status}
-          onChange={(e) => setStatus(e.target.value as Order["status"])}
-          className="rounded border px-2 py-1 text-sm"
-        >
-          {STATUSES.map((s) => (
-            <option key={s.v} value={s.v}>
-              {s.label}
-            </option>
-          ))}
-        </select>
+      <div className="mt-4 flex flex-wrap items-end gap-2">
+        <div className="flex items-center gap-2">
+          <select
+            value={status}
+            onChange={(e) => setStatus(e.target.value as Order["status"])}
+            className="rounded border px-2 py-1 text-sm"
+          >
+            {STATUSES.map((s) => (
+              <option key={s.v} value={s.v}>
+                {s.label}
+              </option>
+            ))}
+          </select>
+
+          {showPrice && (
+            <div className="flex items-center gap-2">
+              <input
+                type="number"
+                min={0}
+                step={1}
+                inputMode="numeric"
+                className="h-8 w-28 rounded border px-2 text-sm"
+                placeholder="Сумма, ₽"
+                value={price}
+                onChange={(e) => setPrice(e.target.value.replace(/[^\d]/g, ""))}
+              />
+              <span className="text-xs text-slate-500">₽</span>
+            </div>
+          )}
+        </div>
+
         <Button
           onClick={() => startTransition(async () => submit(status))}
           size="sm"
@@ -106,6 +142,12 @@ export default function OrderCard({ order }: { order: Order }) {
           {isPending ? "Сохраняем..." : "Сохранить"}
         </Button>
       </div>
+
+      {showPrice && (
+        <p className="mt-2 text-xs text-slate-500">
+          Сумма будет показана пользователю в кабинете и подставится в платёжную форму.
+        </p>
+      )}
     </Card>
   );
 }

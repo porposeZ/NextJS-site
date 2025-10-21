@@ -10,6 +10,7 @@ import { Button } from "~/components/ui/button";
 import ConsentAttach from "~/components/ConsentAttach";
 import SignOutButton from "~/components/SignOutButton";
 import Footer from "~/components/Footer";
+import YandexMetrika from "~/components/YandexMetrika";
 import "../styles/globals.css";
 
 const siteUrl = (env.AUTH_URL ?? env.NEXTAUTH_URL ?? "https://www.yayest.site").replace(/\/$/, "");
@@ -90,7 +91,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
   return (
     <html lang="ru">
-      <head nonce={nonce}>
+      {/* ВАЖНО: у <head> нет nonce — nonce только на Script */}
+      <head>
         {/* JSON-LD */}
         <Script
           id="jsonld-base"
@@ -100,35 +102,49 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
 
-        {/* Yandex.Metrika */}
+        {/* Yandex.Metrika loader */}
         {metrikaOn && (
-          <Script
-            id="ym-loader"
-            strategy="afterInteractive"
-            nonce={nonce}
-            dangerouslySetInnerHTML={{
-              __html: `
-                (function(m,e,t,r,i,k,a){
-                  m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
-                  m[i].l=1*new Date();
-                  for (var j = 0; j < document.scripts.length; j++) {
-                    if (document.scripts[j].src === r) { return; }
-                  }
-                  k=e.createElement(t),a=e.getElementsByTagName(t)[0];
-                  k.async=1;k.src=r;a.parentNode.insertBefore(k,a);
-                })(window, document, 'script', 'https://mc.yandex.ru/metrika/tag.js', 'ym');
+          <>
+            <Script
+              id="ym-loader"
+              strategy="afterInteractive"
+              nonce={nonce}
+              dangerouslySetInnerHTML={{
+                __html: `
+                  (function(m,e,t,r,i,k,a){
+                    m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+                    m[i].l=1*new Date();
+                    for (var j = 0; j < document.scripts.length; j++) {
+                      if (document.scripts[j].src === r) { return; }
+                    }
+                    k=e.createElement(t),a=e.getElementsByTagName(t)[0];
+                    k.async=1;k.src=r;a.parentNode.insertBefore(k,a);
+                  })(window, document, 'script', 'https://mc.yandex.ru/metrika/tag.js', 'ym');
 
-                ym(${metrikaId}, 'init', {
-                  ssr: true,
-                  webvisor: true,
-                  clickmap: true,
-                  ecommerce: "dataLayer",
-                  accurateTrackBounce: true,
-                  trackLinks: true
-                });
-              `,
-            }}
-          />
+                  // id для клиентских компонентов (thanks-goal и т.п.)
+                  window.__ymCounterId = ${metrikaId};
+
+                  ym(${metrikaId}, 'init', {
+                    defer: true,               // SPA: отключаем авто-хит, хиты шлём сами
+                    webvisor: true,
+                    clickmap: true,
+                    accurateTrackBounce: true,
+                    trackLinks: true
+                  });
+                `,
+              }}
+            />
+            {/* noscript-пиксель */}
+            <noscript>
+              <div>
+                <img
+                  src={`https://mc.yandex.ru/watch/${metrikaId}`}
+                  style={{ position: "absolute", left: "-9999px" }}
+                  alt=""
+                />
+              </div>
+            </noscript>
+          </>
         )}
 
         {/* T-Bank loader: без onLoad, всё строкой */}
@@ -171,18 +187,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       </head>
 
       <body className="min-h-dvh flex flex-col bg-slate-50 text-slate-900 antialiased">
-        {/* noscript-пиксель Метрики */}
-        {metrikaOn && (
-          <noscript>
-            <div>
-              <img
-                src={`https://mc.yandex.ru/watch/${metrikaId}`}
-                style={{ position: "absolute", left: "-9999px" }}
-                alt=""
-              />
-            </div>
-          </noscript>
-        )}
+        {/* SPA-хиты Метрики */}
+        {metrikaOn && <YandexMetrika counterId={Number(metrikaId)} />}
 
         {/* Header */}
         <header className="sticky top-0 z-50 bg-white/90 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-white/70">
@@ -200,8 +206,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
             <div className="flex items-center gap-3">
               <Link href="/orders" className="text-sm hover:text-sky-700">Мои заказы</Link>
-              <Link href="/about" className="text-sm hover:text-sky-700">О нас</Link>
-              <Link href="/profile" className="text-sm hover:text-sky-700">Личный кабинет</Link>
+              <Link href="/about" className="text-sm hover:text-сky-700">О нас</Link>
+              <Link href="/profile" className="text-sm hover:text-сky-700">Личный кабинет</Link>
 
               {session?.user?.id ? (
                 <>
@@ -255,7 +261,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             className="rounded-full bg-green-500 p-3 text-white shadow-lg transition hover:-translate-y-0.5 hover:bg-green-600"
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-              <path d="M20 3.5A10.5 10.5 0 0 0 3.6 19.2L3 22l2.9-.6A10.5 10.5 0 1 0 20 3.5ZM12 20.5a8.5 8.5 0 1 1 7.1-13.1 8.5 8.5 0 0 1-7.1 13.1Zm4-6.3c-.2-.1-1.2-.6-1.4-.7s-.3-.1-.5.1-.6.7-.7.8-.3.1-.5 0a6.7 6.7 0 0 1-2-1.3 7.4 7.4 0 0 1-1.4-1.8c-.1-.2 0-.3 0-.5l.3-.4.2-.4c.1-.1 0-.3 0-.4л-.6-1.4c-.2-.5-.4-.4-.6-.4h-.5c-.2 0-.4.2-.5.4a2 2 0 0 0-.6 1.6 4 4 0 0 0 .8 2.1 9.7 9.7 0 0 0 3.7 3.6c.4.2 1 .5 1.6.6a3 3 0 0 0 1.4.1 2.2 2.2 0 0 0 1.4-1c.2-.4.2-.8.2-.9 0-.1-.2-.2-.4-.3Z" />
+              <path d="M20 3.5A10.5 10.5 0 0 0 3.6 19.2L3 22l2.9-.6A10.5 10.5 0 1 0 20 3.5ZM12 20.5a8.5 8.5 0 1 1 7.1-13.1 8.5 8.5 0 0 1-7.1 13.1Zm4-6.3c-.2-.1-1.2-.6-1.4-.7s-.3-.1-.5.1-.6.7-.7.8-.3.1-.5 0a6.7 6.7 0 0 1-2-1.3 7.4 7.4 0 0 1-1.4-1.8c-.1-.2 0-.3 0-.5l.3-.4.2-.4c.1-.1 0-.3 0-.4л-.6-1.4c-.2-.5-.4-.4-.6-.4h-.5c-.2 0-.4.2-.5.4a2 2 0 0 0-.6 1.6 4 4 0  0 0 .8 2.1 9.7 9.7 0 0 0 3.7 3.6c.4.2 1 .5 1.6.6a3 3 0 0 0 1.4.1 2.2 2.2 0 0 0 1.4-1c.2-.4.2-.8.2-.9 0-.1-.2-.2-.4-.3Z" />
             </svg>
           </a>
           <a

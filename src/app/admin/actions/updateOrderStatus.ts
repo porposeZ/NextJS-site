@@ -5,9 +5,7 @@ import { revalidatePath } from "next/cache";
 import { db } from "~/server/db";
 import { requireAdmin } from "~/server/auth/roles";
 import { sendMail } from "~/server/email/send";
-import OrderStatusChangedEmail, {
-  readableStatus,
-} from "~/emails/OrderStatusChangedEmail";
+import OrderStatusChangedEmail, { readableStatus } from "~/emails/OrderStatusChangedEmail";
 import { env } from "~/server/env";
 import { OrderStatus } from "@prisma/client";
 
@@ -35,55 +33,56 @@ export async function updateOrderStatus(formData: FormData) {
   const rawStatus = (formData.get("status") as string | null) ?? "";
 
   if (!id || !isOrderStatus(rawStatus)) {
-    throw new Error("Invalid input");
+    return { ok: false as const, error: "INVALID_INPUT" as const };
   }
 
-  // цена может прийти из инпута как строка
+  // цена может прийти из инпута как строка рублей
+  // допускаем пустое значение — тогда не трогаем budget
   const rawPrice = (formData.get("price") as string | null) ?? "";
-  const price =
-    rawPrice.trim() === "" ? undefined : Number.isFinite(Number(rawPrice)) ? Math.floor(Number(rawPrice)) : NaN;
-
-  // Если переводим в "Ждёт оплаты" — цена обязательна и > 0
-  if (rawStatus === "AWAITING_PAYMENT") {
-    if (typeof price !== "number" || !Number.isFinite(price) || price <= 0) {
-      throw new Error("PRICE_REQUIRED");
-    }
+  let priceRub: number | undefined;
+  if (rawPrice.trim() !== "") {
+    const n = Number(rawPrice);
+    if (Number.isFinite(n) && n >= 0) priceRub = Math.floor(n);
   }
 
-  // После проверки тип уже сужен — лишних утверждений не нужно
   const status = rawStatus;
 
-  // Обновляем заказ: статус + (при AWAITING_PAYMENT) цена в budget
-  await db.order.update({
-    where: { id },
-    data: {
-      status,
-      ...(status === "AWAITING_PAYMENT" ? { budget: price } : {}),
-    },
-  });
-
-  // История: смена статуса — таблицы может не быть в этой схеме
+  // ⚠️ Больше НЕ бросаем ошибку при AWAITING_PAYMENT без цены.
+  // Если priceRub задан — запишем в budget; если нет — оставим как есть.
   try {
-    const anyDb = db as unknown as {
-      orderEvent?: { create?: (args: unknown) => Promise<unknown> };
-    };
-    await anyDb.orderEvent?.create?.({
+    await db.order.update({
+      where: { id },
       data: {
-        orderId: id,
-        type: "STATUS_CHANGED",
-        message:
-          status === "AWAITING_PAYMENT" && typeof price === "number"
-            ? `Статус изменён на ${status}. Назначена стоимость ${price} ₽`
-            : `Статус изменён на ${status}`,
+        status,
+        ...(typeof priceRub === "number" ? { budget: priceRub } : {}),
       },
     });
+
+    // История (если таблица есть)
+    try {
+      const anyDb = db as unknown as {
+        orderEvent?: { create?: (args: unknown) => Promise<unknown> };
+      };
+      await anyDb.orderEvent?.create?.({
+        data: {
+          orderId: id,
+          type: "STATUS_CHANGED",
+          message:
+            status === "AWAITING_PAYMENT" && typeof priceRub === "number"
+              ? `Статус изменён на ${status}. Назначена стоимость ${priceRub} ₽`
+              : `Статус изменён на ${status}`,
+        },
+      });
+    } catch (e) {
+      console.warn("[orders] orderEvent skipped:", (e as Error)?.message);
+    }
   } catch (e) {
-    console.warn("[orders] orderEvent skipped:", (e as Error)?.message);
+    console.error("[orders] update failed:", e);
+    return { ok: false as const, error: "DB_ERROR" as const };
   }
 
-  // Письмо пользователю — по настройке notifyOnStatusChange
+  // Письмо пользователю (если включено)
   try {
-    // Используем select, чтобы получить строго типизированный description
     const order = await db.order.findUnique({
       where: { id },
       select: {
@@ -92,9 +91,7 @@ export async function updateOrderStatus(formData: FormData) {
         description: true,
         createdAt: true,
         dueDate: true,
-        user: {
-          select: { email: true, name: true, notifyOnStatusChange: true },
-        },
+        user: { select: { email: true, name: true, notifyOnStatusChange: true } },
       },
     });
 
@@ -127,5 +124,11 @@ export async function updateOrderStatus(formData: FormData) {
   revalidatePath("/admin/orders");
   revalidatePath("/orders");
 
-  return { ok: true as const };
+  // Если цену не передали при AWAITING_PAYMENT — вернём предупреждение (можно показать в UI)
+  const warnings: string[] = [];
+  if (status === "AWAITING_PAYMENT" && typeof priceRub !== "number") {
+    warnings.push("PRICE_MISSING");
+  }
+
+  return { ok: true as const, warnings };
 }

@@ -10,7 +10,6 @@ import { Label } from "~/components/ui/label";
 
 export const metadata = { title: "Все заказы — Админ" };
 
-// Статусы берём из Prisma-энама, чтобы совпадало с БД
 const STATUSES: readonly OrderStatus[] = [
   OrderStatus.REVIEW,
   OrderStatus.AWAITING_PAYMENT,
@@ -21,7 +20,6 @@ const STATUSES: readonly OrderStatus[] = [
 
 type SearchParamsDict = Record<string, string | string[] | undefined>;
 
-/** Тип, который ждёт OrderCard */
 type OrderForCard = {
   id: string;
   city: string;
@@ -29,6 +27,7 @@ type OrderForCard = {
   createdAt: Date | string;
   dueDate: Date | string | null;
   status: OrderStatus;
+  budget: number | null; // ← сумма, если назначена
   user: {
     email: string | null;
     name: string | null;
@@ -36,7 +35,7 @@ type OrderForCard = {
   };
   events: {
     id: string;
-    message: string; // строго string — без null
+    message: string;
     createdAt: Date | string;
   }[];
 };
@@ -54,7 +53,6 @@ function first(v: string | string[] | undefined): string | undefined {
 export default async function AdminOrdersPage({
   searchParams,
 }: {
-  // В Next 15.5 searchParams в Server Component — Promise
   searchParams: Promise<SearchParamsDict>;
 }) {
   await requireAdmin();
@@ -66,16 +64,11 @@ export default async function AdminOrdersPage({
   const fromVal = first(sp.from) ?? "";
   const toVal = first(sp.to) ?? "";
 
-  // where — строго типизировано
   const where: Prisma.OrderWhereInput = {};
 
-  // фильтр по статусу — только корректные значения
   const statusOk = STATUSES.includes(statusRaw as OrderStatus);
-  if (statusOk) {
-    where.status = statusRaw as OrderStatus;
-  }
+  if (statusOk) where.status = statusRaw as OrderStatus;
 
-  // фильтр по датам создания
   if (fromVal || toVal) {
     const createdAt: Prisma.DateTimeFilter = {};
     if (fromVal) createdAt.gte = new Date(`${fromVal}T00:00:00.000Z`);
@@ -83,7 +76,6 @@ export default async function AdminOrdersPage({
     where.createdAt = createdAt;
   }
 
-  // Жёсткий select — только поля, нужные OrderCard
   const candidates = await db.order.findMany({
     where,
     orderBy: { createdAt: "desc" },
@@ -94,6 +86,7 @@ export default async function AdminOrdersPage({
       createdAt: true,
       dueDate: true,
       status: true,
+      budget: true, // ← добавили
       user: { select: { email: true, name: true, phone: true } },
       events: {
         select: { id: true, message: true, createdAt: true },
@@ -103,7 +96,6 @@ export default async function AdminOrdersPage({
     },
   });
 
-  // Поиск текста/телефона — в памяти
   const needle = qVal.toLocaleLowerCase("ru-RU");
   const needleDigits = onlyDigits(qVal);
 
@@ -111,15 +103,12 @@ export default async function AdminOrdersPage({
     ? candidates.filter((o) => {
         const hay = [norm(o.city), norm(o.description), norm(o.user?.email), norm(o.user?.name)];
         const byText = hay.some((h) => h.includes(needle));
-
         const phoneDigits = onlyDigits(o.user?.phone);
         const byPhone = needleDigits.length > 0 && phoneDigits.includes(needleDigits);
-
         return byText || byPhone;
       })
     : candidates;
 
-  // Нормализуем к точному типу OrderForCard
   const orders: OrderForCard[] = filtered.map((o) => ({
     id: o.id,
     city: o.city,
@@ -127,6 +116,7 @@ export default async function AdminOrdersPage({
     createdAt: o.createdAt,
     dueDate: o.dueDate ?? null,
     status: o.status,
+    budget: o.budget ?? null,
     user: {
       email: o.user?.email ?? null,
       name: o.user?.name ?? null,
