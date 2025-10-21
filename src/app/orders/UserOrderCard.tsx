@@ -12,7 +12,7 @@ type Order = {
   description: string;
   status: OrderStatus;
   createdAt: string | Date;
-  budget?: number | null; // цена, которую назначил админ (₽)
+  budget?: number | null;
 };
 
 const STATUS_RU: Record<OrderStatus, string> = {
@@ -45,7 +45,6 @@ export default function UserOrderCard({ order }: { order: Order }) {
   }, [order.budget]);
 
   const pay = () => {
-    // Простая защита от спама: не чаще 1 раза в 10 секунд для одного заказа
     const guardKey = `paymentGuard:${order.id}`;
     const now = Date.now();
     const last = Number(localStorage.getItem(guardKey) || "0");
@@ -59,26 +58,24 @@ export default function UserOrderCard({ order }: { order: Order }) {
       try {
         const fd = new FormData();
         fd.set("orderId", order.id);
-        fd.set("paymentMethod", "yookassa"); // внутренний маркер
+        fd.set("paymentMethod", "yookassa");
 
         const res = (await startPayment(fd)) as StartPaymentResult;
 
         if (!res.ok) {
-          // Показать реальную причину из API (route.ts теперь отдаёт подробную ошибку)
           alert(res.error || "Не удалось инициировать оплату");
           return;
         }
 
         window.location.href = res.paymentUrl;
-      } catch (e) {
-        console.error("[pay] unexpected error:", e);
+      } catch (err) {
+        console.error("[pay] unexpected error:", err);
         alert("Произошла ошибка при запуске оплаты.");
       }
     });
   };
 
-  const createdAt =
-    typeof order.createdAt === "string" ? new Date(order.createdAt) : order.createdAt;
+  const createdAt = typeof order.createdAt === "string" ? new Date(order.createdAt) : order.createdAt;
 
   return (
     <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -94,9 +91,7 @@ export default function UserOrderCard({ order }: { order: Order }) {
         </span>
       </div>
 
-      <div className="whitespace-pre-wrap text-sm leading-relaxed text-slate-800">
-        {order.description}
-      </div>
+      <div className="whitespace-pre-wrap text-sm leading-relaxed text-slate-800">{order.description}</div>
 
       <div className="mt-3 text-xs text-slate-500">Создано: {createdAt.toLocaleString()}</div>
 
@@ -112,12 +107,7 @@ export default function UserOrderCard({ order }: { order: Order }) {
             )}
           </div>
 
-          <Button
-            onClick={pay}
-            disabled={isPending}
-            aria-busy={isPending}
-            className="bg-orange-500 hover:bg-orange-600"
-          >
+          <Button onClick={pay} disabled={isPending} aria-busy={isPending} className="bg-orange-500 hover:bg-orange-600">
             {isPending ? "Переходим к оплате..." : "Оплатить"}
           </Button>
         </div>

@@ -6,7 +6,7 @@ export function loadTinkoffIntegration(terminalKey: string) {
 
   _initPromise = new Promise<void>((resolve, reject) => {
     // если уже загружен
-    if (typeof window !== "undefined" && window.PaymentIntegration) {
+    if (typeof window !== "undefined" && (window as any).PaymentIntegration) {
       resolve();
       return;
     }
@@ -17,8 +17,9 @@ export function loadTinkoffIntegration(terminalKey: string) {
 
     script.onload = async () => {
       try {
-        if (!window.PaymentIntegration) throw new Error("PaymentIntegration is missing");
-        await window.PaymentIntegration.init({
+        const PI = (window as any).PaymentIntegration;
+        if (!PI) throw new Error("PaymentIntegration is missing");
+        await PI.init({
           terminalKey,
           product: "eacq",
           features: {
@@ -28,7 +29,7 @@ export function loadTinkoffIntegration(terminalKey: string) {
         });
         resolve();
       } catch (e) {
-        reject(e);
+        reject(e instanceof Error ? e : new Error(String(e)));
       }
     };
 

@@ -6,7 +6,8 @@ import { usePathname, useSearchParams } from "next/navigation";
 
 declare global {
   interface Window {
-    ym?: (...args: any[]) => void;
+    // достаточно общего типа без any
+    ym?: (counterId: number, event: "hit", url: string) => void;
   }
 }
 
@@ -22,8 +23,8 @@ export default function YandexMetrika({ counterId }: Props) {
 
     const url = pathname + (search?.toString() ? `?${search.toString()}` : "");
     try {
-      window.ym!(counterId, "hit", url);
-    } catch (e) {
+      window.ym(counterId, "hit", url);
+    } catch {
       // молча, чтобы не шуметь в консоли
     }
   }, [counterId, pathname, search]);

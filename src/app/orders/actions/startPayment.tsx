@@ -18,15 +18,18 @@ async function withDbRetry<T>(fn: () => Promise<T>, attempts = 2): Promise<T> {
   for (let i = 0; i < attempts; i++) {
     try {
       return await fn();
-    } catch (e: any) {
+    } catch (e: unknown) {
       last = e;
-      const code = e?.code ?? e?.meta?.code;
-      const msg: string = e?.message ?? "";
+      const err = e as { code?: string; meta?: { code?: string }; message?: string };
+      const code = err?.code ?? err?.meta?.code;
+      const msg = err?.message ?? "";
       if (code !== P1017 && !msg.includes(P1017)) break;
       try {
         await db.$connect();
-      } catch {}
-      await new Promise((r) => setTimeout(r, 150));
+      } catch {
+        // ignore
+      }
+      await new Promise<void>((r) => setTimeout(r, 150));
     }
   }
   throw last;
@@ -42,8 +45,7 @@ export async function startPayment(formData: FormData): Promise<StartPaymentResu
   const session = await auth();
   if (!session?.user?.id) return { ok: false, error: "NOT_AUTHENTICATED" };
 
-  // ВАЖНО: сохранить userId до входа в колбэки, иначе TS не видит сужение null
-  const userId = session.user!.id;
+  const userId = session.user.id;
 
   const orderId = (formData.get("orderId") as string | null) ?? "";
   const paymentMethod = (formData.get("paymentMethod") as string | null) ?? "";
@@ -88,15 +90,23 @@ export async function startPayment(formData: FormData): Promise<StartPaymentResu
       cache: "no-store",
     });
 
-    let data: any = null;
-    try {
-      data = await r.json();
-    } catch {}
+    type ApiInitResp =
+      | { ok: true; paymentUrl: string; paymentId?: string }
+      | { ok: false; error: string };
 
-    if (!r.ok || !data?.ok || !data.paymentUrl) {
+    let data: ApiInitResp | null = null;
+    try {
+      data = (await r.json()) as ApiInitResp;
+    } catch {
+      data = null;
+    }
+
+    if (!r.ok || !data || !("ok" in data) || data.ok !== true || !("paymentUrl" in data)) {
       return {
         ok: false,
-        error: data?.error ?? `INIT_FAILED_${r.status}`,
+        error:
+          (data && "error" in data ? data.error : undefined) ??
+          `INIT_FAILED_${r.status}`,
       };
     }
 
@@ -105,7 +115,7 @@ export async function startPayment(formData: FormData): Promise<StartPaymentResu
     return {
       ok: true,
       paymentUrl: String(data.paymentUrl),
-      paymentId: data.paymentId ? String(data.paymentId) : undefined,
+      paymentId: "paymentId" in data && data.paymentId ? String(data.paymentId) : undefined,
     };
   } catch (e) {
     console.error("[startPayment] fetch error:", e);

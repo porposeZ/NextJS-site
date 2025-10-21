@@ -3,15 +3,24 @@ import crypto from "node:crypto";
 import { env } from "~/server/env";
 import { db } from "~/server/db";
 
+// Тип колбэка от T-Bank (минимально нужные поля)
+type TinkoffCallbackPayload = {
+  Token?: string;
+  Status?: string;
+  OrderId?: string;
+  DATA?: { baseOrderId?: string } | null;
+  [k: string]: unknown;
+};
+
 // Подпись ровно как в init
 function makeTinkoffToken(payload: Record<string, unknown>, password: string) {
   const data: Record<string, unknown> = { ...payload, Password: password };
-  delete (data as any).Token;
+  delete (data as { Token?: unknown }).Token;
 
   const concat = Object.keys(data)
     .sort((a, b) => a.localeCompare(b))
     .map((k) => {
-      const v = (data as any)[k];
+      const v = data[k];
       if (v === null || v === undefined) return "";
       if (typeof v === "object") return JSON.stringify(v);
       return String(v);
@@ -40,13 +49,13 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: false, error: "Payments not configured" }, { status: 500 });
     }
 
-    const payload = (await req.json()) as Record<string, any>;
+    const payload = (await req.json()) as TinkoffCallbackPayload;
     const theirToken = String(payload.Token ?? "");
     if (!theirToken) {
       return NextResponse.json({ ok: false, error: "No token" }, { status: 400 });
     }
 
-    const myToken = makeTinkoffToken(payload, terminalPassword);
+    const myToken = makeTinkoffToken(payload as Record<string, unknown>, terminalPassword);
     if (myToken.toLowerCase() !== theirToken.toLowerCase()) {
       return NextResponse.json({ ok: false, error: "Bad token" }, { status: 401 });
     }
@@ -56,9 +65,7 @@ export async function POST(req: Request) {
     // Если в init не отправляли DATA — берём часть до суффикса
     const rawOrderId = String(payload.OrderId ?? "");
     const baseOrderId: string =
-      (payload?.DATA?.baseOrderId as string | undefined) ||
-      rawOrderId.split("-")[0] ||
-      rawOrderId;
+      payload.DATA?.baseOrderId || rawOrderId.split("-")[0] || rawOrderId;
 
     if (!baseOrderId || !tStatus) {
       return NextResponse.json({ ok: false, error: "Bad payload" }, { status: 400 });

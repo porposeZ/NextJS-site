@@ -11,15 +11,19 @@ export async function withDbRetry<T>(
   for (let i = 0; i < attempts; i++) {
     try {
       return await fn();
-    } catch (e: any) {
+    } catch (e: unknown) {
       last = e;
-      const code = e?.code ?? e?.meta?.code;
-      const msg: string = e?.message ?? "";
+      const err = e as { code?: string; meta?: { code?: string }; message?: string };
+      const code = err?.code ?? err?.meta?.code;
+      const msg = err?.message ?? "";
       if (code !== "P1017" && !msg.includes("P1017")) break;
+
       try {
         await db.$connect();
-      } catch {}
-      await new Promise((r) => setTimeout(r, delayMs));
+      } catch {
+        // ignore reconnect error and still wait a bit
+      }
+      await new Promise<void>((r) => setTimeout(r, delayMs));
     }
   }
   throw last;
