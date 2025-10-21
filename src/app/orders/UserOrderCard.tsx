@@ -1,8 +1,9 @@
+// src/app/orders/UserOrderCard.tsx
 "use client";
 
 import { useTransition, useMemo } from "react";
 import { Button } from "~/components/ui/button";
-import { startPayment, type StartPaymentResult } from "./actions/startPayment";
+import { startPayment } from "./actions/startPayment";
 
 type OrderStatus = "REVIEW" | "AWAITING_PAYMENT" | "IN_PROGRESS" | "DONE" | "CANCELED";
 
@@ -47,7 +48,7 @@ export default function UserOrderCard({ order }: { order: Order }) {
   const pay = () => {
     const guardKey = `paymentGuard:${order.id}`;
     const now = Date.now();
-    const last = Number(localStorage.getItem(guardKey) || "0");
+    const last = Number(localStorage.getItem(guardKey) ?? "0"); // <-- ?? вместо ||
     if (now - last < 10_000) {
       alert("Подождите несколько секунд перед повторной попыткой.");
       return;
@@ -60,7 +61,7 @@ export default function UserOrderCard({ order }: { order: Order }) {
         fd.set("orderId", order.id);
         fd.set("paymentMethod", "yookassa");
 
-        const res = (await startPayment(fd)) as StartPaymentResult;
+        const res = await startPayment(fd); // убран лишний каст
 
         if (!res.ok) {
           alert(res.error || "Не удалось инициировать оплату");

@@ -17,7 +17,12 @@ function makeTinkoffToken(payload: Record<string, unknown>, password: string) {
       const v = data[k];
       if (v === null || v === undefined) return "";
       if (typeof v === "object") return JSON.stringify(v);
-      return String(v);
+      if (typeof v === "string") return v;
+      if (typeof v === "number" || typeof v === "boolean" || typeof v === "bigint") {
+        return String(v);
+      }
+      // прочие типы (symbol/function/unknown) — игнорируем
+      return "";
     })
     .join("");
 
@@ -113,7 +118,8 @@ export async function POST(req: Request) {
     const data: unknown = await resp.json().catch(() => ({}));
 
     // Безопасное извлечение Success
-    const success = typeof data === "object" && data !== null && (data as { Success?: boolean }).Success;
+    const success =
+      typeof data === "object" && data !== null && (data as { Success?: boolean }).Success;
 
     if (!resp.ok || !success) {
       const d = (data ?? {}) as Record<string, unknown>;
@@ -126,9 +132,9 @@ export async function POST(req: Request) {
       });
 
       const errText =
-        (d?.Message as string | undefined) ||
-        (d?.Details as string | undefined) ||
-        (d?.ErrorCode as string | undefined) ||
+        (d?.Message as string | undefined) ??
+        (d?.Details as string | undefined) ??
+        (d?.ErrorCode as string | undefined) ??
         `Init failed (HTTP ${resp.status})`;
 
       return NextResponse.json({ ok: false, error: String(errText), raw: d }, { status: 500 });

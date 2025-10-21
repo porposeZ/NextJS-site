@@ -1,4 +1,16 @@
 // src/lib/tinkoff.ts
+declare global {
+  interface Window {
+    PaymentIntegration?: {
+      init(opts: {
+        terminalKey: string;
+        product: "eacq";
+        features?: { iframe?: Record<string, unknown> };
+      }): Promise<void>;
+    };
+  }
+}
+
 let _initPromise: Promise<void> | null = null;
 
 export function loadTinkoffIntegration(terminalKey: string) {
@@ -6,7 +18,7 @@ export function loadTinkoffIntegration(terminalKey: string) {
 
   _initPromise = new Promise<void>((resolve, reject) => {
     // если уже загружен
-    if (typeof window !== "undefined" && (window as any).PaymentIntegration) {
+    if (typeof window !== "undefined" && window.PaymentIntegration) {
       resolve();
       return;
     }
@@ -17,13 +29,12 @@ export function loadTinkoffIntegration(terminalKey: string) {
 
     script.onload = async () => {
       try {
-        const PI = (window as any).PaymentIntegration;
+        const PI = window.PaymentIntegration;
         if (!PI) throw new Error("PaymentIntegration is missing");
         await PI.init({
           terminalKey,
           product: "eacq",
           features: {
-            // при необходимости добавим payment, addcardIframe
             iframe: {},
           },
         });

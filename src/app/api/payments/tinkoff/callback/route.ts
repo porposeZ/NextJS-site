@@ -23,7 +23,11 @@ function makeTinkoffToken(payload: Record<string, unknown>, password: string) {
       const v = data[k];
       if (v === null || v === undefined) return "";
       if (typeof v === "object") return JSON.stringify(v);
-      return String(v);
+      if (typeof v === "string") return v;
+      if (typeof v === "number" || typeof v === "boolean" || typeof v === "bigint") {
+        return String(v);
+      }
+      return "";
     })
     .join("");
 
@@ -65,7 +69,7 @@ export async function POST(req: Request) {
     // Если в init не отправляли DATA — берём часть до суффикса
     const rawOrderId = String(payload.OrderId ?? "");
     const baseOrderId: string =
-      payload.DATA?.baseOrderId || rawOrderId.split("-")[0] || rawOrderId;
+      payload.DATA?.baseOrderId ?? rawOrderId.split("-")[0] ?? rawOrderId;
 
     if (!baseOrderId || !tStatus) {
       return NextResponse.json({ ok: false, error: "Bad payload" }, { status: 400 });
@@ -75,7 +79,10 @@ export async function POST(req: Request) {
     if (next) {
       await db.order
         .update({ where: { id: baseOrderId }, data: { status: next } })
-        .catch(() => {});
+        .catch((err) => {
+          // не валимся, но фиксируем
+          console.warn("[tinkoff callback] db.update failed:", err);
+        });
     }
 
     return new NextResponse("OK", { status: 200 });

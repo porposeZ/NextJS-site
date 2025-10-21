@@ -1,3 +1,4 @@
+// src/app/profile/page.tsx
 import { redirect } from "next/navigation";
 import { auth } from "~/server/auth";
 import { db } from "~/server/db";
@@ -11,7 +12,7 @@ export default async function ProfilePage() {
   const session = await auth();
   if (!session?.user?.id) redirect("/auth/signin?callbackUrl=/profile");
 
-  const [user, sessions] = await Promise.all([
+  const [user, _sessions] = await Promise.all([
     db.user.findUnique({
       where: { id: session.user.id },
       select: {
@@ -22,7 +23,7 @@ export default async function ProfilePage() {
         organization: true,
       },
     }),
-    db.session.count({ where: { userId: session.user.id } }),
+    db.session.count({ where: { userId: session.user.id } }), // оставил на будущее
   ]);
 
   return (
