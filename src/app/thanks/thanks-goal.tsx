@@ -3,23 +3,25 @@
 
 import { useEffect } from "react";
 
-declare global {
-  interface Window {
-    ym?: (...args: any[]) => void;
-  }
-}
-
-const GOAL_NAME = "order_success"; // Создай в Метрике цель типа "JavaScript-событие" с таким именем
+const GOAL_NAME = "order_success"; // Цель в Я.Метрике типа "JavaScript-событие"
 
 export default function ThanksGoal() {
   useEffect(() => {
-    if (typeof window !== "undefined" && typeof window.ym === "function") {
+    if (typeof window === "undefined") return;
+
+    // Берём ym без повторного объявления типов, чтобы не конфликтовать с глобальной декларацией
+    const ym = (window as unknown as { ym?: (...a: unknown[]) => void }).ym;
+
+    if (typeof ym === "function") {
       try {
-        // подменять id не нужно — возьмётся из глобальной функции ym
-        // но чтобы наверняка — можно пробросить из ENV, если хочешь
-        // @ts-ignore
-        window.ym(window.__ymCounterId || undefined, "reachGoal", GOAL_NAME);
-      } catch {}
+        // если в окне лежит id счётчика — используем его; иначе Метрика возьмёт "текущий"
+        const counterId =
+          (window as unknown as { __ymCounterId?: number }).__ymCounterId;
+
+        ym(counterId as unknown as number, "reachGoal", GOAL_NAME);
+      } catch {
+        // молча игнорируем
+      }
     }
   }, []);
 
