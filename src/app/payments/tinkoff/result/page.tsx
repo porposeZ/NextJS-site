@@ -1,3 +1,4 @@
+// src/app/payments/tinkoff/result/page.tsx
 import Link from "next/link";
 import { auth } from "~/server/auth";
 import { db } from "~/server/db";
@@ -5,17 +6,22 @@ import { redirect } from "next/navigation";
 
 export const metadata = { title: "Статус оплаты" };
 
-type Props = {
-  searchParams: { [k: string]: string | string[] | undefined };
-};
+type SearchParamsDict = Record<string, string | string[] | undefined>;
 
-export default async function TinkoffResultPage({ searchParams }: Props) {
+export default async function TinkoffResultPage({
+  searchParams,
+}: {
+  // В Next 15 searchParams в Server Component — Promise
+  searchParams: Promise<SearchParamsDict>;
+}) {
   const session = await auth();
   if (!session?.user?.id) redirect("/auth/signin?callbackUrl=/orders");
 
-  const success = (searchParams.success ?? "0").toString() === "1";
-  const canceled = (searchParams.canceled ?? "0").toString() === "1";
-  const orderId = (searchParams.orderId ?? "").toString();
+  const sp = await searchParams;
+
+  const success = (sp.success ?? "0").toString() === "1";
+  const canceled = (sp.canceled ?? "0").toString() === "1";
+  const orderId = (sp.orderId ?? "").toString();
 
   if (!orderId) {
     return (
@@ -23,7 +29,9 @@ export default async function TinkoffResultPage({ searchParams }: Props) {
         <h1 className="mb-2 text-xl font-bold">Не удалось определить заказ</h1>
         <p className="text-slate-700">Попробуйте открыть страницу «Мои заказы».</p>
         <div className="mt-4">
-          <Link href="/orders" className="text-sky-600 hover:underline">Перейти к заказам</Link>
+          <Link href="/orders" className="text-sky-600 hover:underline">
+            Перейти к заказам
+          </Link>
         </div>
       </div>
     );
@@ -40,14 +48,15 @@ export default async function TinkoffResultPage({ searchParams }: Props) {
       <div className="mx-auto max-w-xl rounded-lg bg-white p-6 shadow">
         <h1 className="mb-2 text-xl font-bold">Заказ не найден</h1>
         <div className="mt-4">
-          <Link href="/orders" className="text-sky-600 hover:underline">К списку заказов</Link>
+          <Link href="/orders" className="text-sky-600 hover:underline">
+            К списку заказов
+          </Link>
         </div>
       </div>
     );
   }
 
-  // Простой сценарий без вебхуков:
-  // если success=1 — переводим статус из AWAITING_PAYMENT -> IN_PROGRESS
+  // Если используем эту страницу как fallback без вебхуков:
   if (success && order.status === "AWAITING_PAYMENT") {
     await db.order.update({
       where: { id: order.id },
@@ -81,7 +90,9 @@ export default async function TinkoffResultPage({ searchParams }: Props) {
       )}
 
       <div className="mt-4">
-        <Link href="/orders" className="text-sky-600 hover:underline">Открыть «Мои заказы»</Link>
+        <Link href="/orders" className="text-sky-600 hover:underline">
+          Открыть «Мои заказы»
+        </Link>
       </div>
     </div>
   );
