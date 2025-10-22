@@ -11,6 +11,7 @@ import ConsentAttach from "~/components/ConsentAttach";
 import SignOutButton from "~/components/SignOutButton";
 import Footer from "~/components/Footer";
 import YandexMetrika from "~/components/YandexMetrika";
+import FloatingContacts from "~/components/FloatingContacts";
 import "../styles/globals.css";
 
 const siteUrl = (env.AUTH_URL ?? env.NEXTAUTH_URL ?? "https://www.yayest.site").replace(/\/$/, "");
@@ -39,14 +40,18 @@ export const metadata: Metadata = {
     description: siteDescription,
     images: ["/logo/logo.png"],
   },
+  // ✅ фавиконки
   icons: {
-    icon: "/logo/logo.png",
-    shortcut: "/logo/logo.png",
-    apple: "/logo/logo.png",
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/favicon-32x32.png", type: "image/png", sizes: "32x32" },
+      { url: "/favicon-16x16.png", type: "image/png", sizes: "16x16" },
+    ],
+    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180" }],
   },
+  manifest: "/site.webmanifest",
 };
 
-// themeColor должен быть в viewport, а не в metadata
 export const viewport: Viewport = { themeColor: "#0ea5e9" };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
@@ -55,11 +60,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
   const metrikaId = env.METRIKA_ID;
   const metrikaOn = (env.METRIKA_ENABLED ?? "true") !== "false" && !!metrikaId;
-
-  // Включаем T-Bank только если есть ключ терминала
   const tinkoffOn = !!env.TINKOFF_TERMINAL_KEY;
 
-  // JSON-LD
   const jsonLd = {
     "@context": "https://schema.org",
     "@graph": [
@@ -91,7 +93,6 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
   return (
     <html lang="ru">
-      {/* ВАЖНО: у <head> нет nonce — nonce только на Script */}
       <head>
         {/* JSON-LD */}
         <Script
@@ -121,11 +122,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                     k.async=1;k.src=r;a.parentNode.insertBefore(k,a);
                   })(window, document, 'script', 'https://mc.yandex.ru/metrika/tag.js', 'ym');
 
-                  // id для клиентских компонентов (thanks-goal и т.п.)
                   window.__ymCounterId = ${metrikaId};
 
                   ym(${metrikaId}, 'init', {
-                    defer: true,               // SPA: отключаем авто-хит, хиты шлём сами
+                    defer: true,
                     webvisor: true,
                     clickmap: true,
                     accurateTrackBounce: true,
@@ -134,7 +134,6 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                 `,
               }}
             />
-            {/* noscript-пиксель */}
             <noscript>
               <div>
                 <img
@@ -147,7 +146,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           </>
         )}
 
-        {/* T-Bank loader: без onLoad, всё строкой */}
+        {/* T-Bank loader */}
         {tinkoffOn && (
           <Script
             id="tbank-loader"
@@ -160,13 +159,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                     if (window.__tbank_inited) return;
                     window.__tbank_inited = true;
 
-                    // Подключаем integration.js
                     var s = document.createElement('script');
                     s.src = 'https://integrationjs.tbank.ru/integration.js';
                     s.async = true;
                     (document.head || document.body).appendChild(s);
 
-                    // Ждём доступности PaymentIntegration и инициализируем
                     function boot(){
                       if (!window.PaymentIntegration) { setTimeout(boot, 150); return; }
                       try {
@@ -187,7 +184,6 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       </head>
 
       <body className="min-h-dvh flex flex-col bg-slate-50 text-slate-900 antialiased">
-        {/* SPA-хиты Метрики */}
         {metrikaOn && <YandexMetrika counterId={Number(metrikaId)} />}
 
         {/* Header */}
@@ -205,9 +201,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             </Link>
 
             <div className="flex items-center gap-3">
-              <Link href="/orders" className="text-sm hover:text-sky-700">Мои заказы</Link>
-              <Link href="/about" className="text-sm hover:text-сky-700">О нас</Link>
-              <Link href="/profile" className="text-sm hover:text-сky-700">Личный кабинет</Link>
+              <Link href="/orders" className="text-sm transition-colors hover:text-sky-700">Мои заказы</Link>
+              <Link href="/about" className="text-sm transition-colors hover:text-sky-700">О нас</Link>
+              <Link href="/profile" className="text-sm transition-colors hover:text-sky-700">Личный кабинет</Link>
 
               {session?.user?.id ? (
                 <>
@@ -216,7 +212,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                 </>
               ) : (
                 <Link href="/auth/signin">
-                  <Button size="sm" className="bg-orange-500 transition-colors hover:bg-orange-600">
+                  <Button size="sm" className="bg-orange-500 text-white hover:bg-orange-600">
                     Войти
                   </Button>
                 </Link>
@@ -224,7 +220,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             </div>
 
             {/* Контакты справа */}
-            <div className="absolute top-1/2 right-[-180px] flex -translate-y-1/2 flex-col items-start gap-1 text-xs leading-tight text-slate-700">
+            <div className="absolute top-1/2 right-[-180px] hidden -translate-y-1/2 flex-col items-start gap-1 text-xs leading-tight text-slate-700 lg:flex">
               <ul className="space-y-1.5">
                 <li>
                   <a href="mailto:info@yayestcorp.ru" className="group flex items-center gap-2 font-medium text-slate-800 transition-colors hover:text-sky-700">
@@ -251,31 +247,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
         <main className="flex-1 mx-auto w-full max-w-6xl px-4 py-10">{children}</main>
 
-        {/* Плавающие соц-кнопки */}
-        <div className="fixed right-5 bottom-5 z-40 flex flex-col gap-3">
-          <a
-            aria-label="WhatsApp"
-            href="https://wa.me/message/35FOTDGQOVZ4O1"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="rounded-full bg-green-500 p-3 text-white shadow-lg transition hover:-translate-y-0.5 hover:bg-green-600"
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-              <path d="M20 3.5A10.5 10.5 0 0 0 3.6 19.2L3 22l2.9-.6A10.5 10.5 0 1 0 20 3.5ZM12 20.5a8.5 8.5 0 1 1 7.1-13.1 8.5 8.5 0 0 1-7.1 13.1Zm4-6.3c-.2-.1-1.2-.6-1.4-.7s-.3-.1-.5.1-.6.7-.7.8-.3.1-.5 0a6.7 6.7 0 0 1-2-1.3 7.4 7.4 0 0 1-1.4-1.8c-.1-.2 0-.3 0-.5l.3-.4.2-.4c.1-.1 0-.3 0-.4л-.6-1.4c-.2-.5-.4-.4-.6-.4h-.5c-.2 0-.4.2-.5.4a2 2 0 0 0-.6 1.6 4 4 0  0 0 .8 2.1 9.7 9.7 0 0 0 3.7 3.6c.4.2 1 .5 1.6.6a3 3 0 0 0 1.4.1 2.2 2.2 0 0 0 1.4-1c.2-.4.2-.8.2-.9 0-.1-.2-.2-.4-.3Z" />
-            </svg>
-          </a>
-          <a
-            aria-label="Telegram"
-            href="https://t.me/yayestMG"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="rounded-full bg-sky-500 p-3 text-white shadow-lg transition hover:-translate-y-0.5 hover:bg-sky-600"
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-              <path d="M9.5 14.1 9.3 18c.4 0 .6-.2.8-.4л1.9-1.8 4 3c.7.4 1.2.2 1.4-.7л2.5-11c.3-1.2-.4-1.7-1.2-1.4L3.7 9c-1 .4-1 1 .2 1.4л4.5 1.4 10.4-6.6-9.3 8.9Z" />
-            </svg>
-          </a>
-        </div>
+        {/* Плавающие контакты */}
+        <FloatingContacts />
 
         <ConsentAttach />
         <Footer />

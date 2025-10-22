@@ -15,7 +15,8 @@ type Props = {
 export default function SignOutButton({
   callbackUrl = "/",
   className,
-  variant = "secondary",
+  // делаем нейтральной по умолчанию
+  variant = "outline",
   size = "sm",
   children = "Выйти",
 }: Props) {
@@ -24,7 +25,6 @@ export default function SignOutButton({
   const handleSignOut = async () => {
     try {
       setLoading(true);
-      // next-auth/react сам получит CSRF и корректно выполнит POST /api/auth/signout
       await signOut({ callbackUrl });
     } finally {
       setLoading(false);
@@ -38,7 +38,8 @@ export default function SignOutButton({
       disabled={loading}
       variant={variant}
       size={size}
-      className={className}
+      // мягкий hover без смены брендовго цвета
+      className={`transition-colors hover:bg-slate-100 ${className ?? ""}`}
       aria-busy={loading}
     >
       {loading ? "Выходим..." : children}
