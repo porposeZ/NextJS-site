@@ -40,7 +40,7 @@ export const metadata: Metadata = {
     description: siteDescription,
     images: ["/logo/logo.png"],
   },
-  // ✅ фавиконки
+  // фавиконки
   icons: {
     icon: [
       { url: "/favicon.ico", sizes: "any" },
@@ -50,11 +50,13 @@ export const metadata: Metadata = {
     apple: [{ url: "/apple-touch-icon.png", sizes: "180x180" }],
   },
   manifest: "/site.webmanifest",
+  // можно оставить либо это поле, либо meta-тег ниже (оба работать будут)
   verification: {
     yandex: "f26bb4bac1acecc5",
   },
 };
 
+// themeColor должен быть в viewport
 export const viewport: Viewport = { themeColor: "#0ea5e9" };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
@@ -65,6 +67,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const metrikaOn = (env.METRIKA_ENABLED ?? "true") !== "false" && !!metrikaId;
   const tinkoffOn = !!env.TINKOFF_TERMINAL_KEY;
 
+  // JSON-LD
   const jsonLd = {
     "@context": "https://schema.org",
     "@graph": [
@@ -97,6 +100,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   return (
     <html lang="ru">
       <head>
+        {/* вручную добавленный мета-тег для Яндекс.Вебмастера */}
+        <meta name="yandex-verification" content="f26bb4bac1acecc5" />
+
         {/* JSON-LD */}
         <Script
           id="jsonld-base"
@@ -187,6 +193,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       </head>
 
       <body className="min-h-dvh flex flex-col bg-slate-50 text-slate-900 antialiased">
+        {/* SPA-хиты Метрики */}
         {metrikaOn && <YandexMetrika counterId={Number(metrikaId)} />}
 
         {/* Header */}
@@ -215,14 +222,14 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                 </>
               ) : (
                 <Link href="/auth/signin">
-                  <Button size="sm" className="bg-orange-500 text-white hover:bg-orange-600">
+                  <Button size="sm" className="cursor-pointer bg-orange-500 text-white hover:bg-orange-600">
                     Войти
                   </Button>
                 </Link>
               )}
             </div>
 
-            {/* Контакты справа */}
+            {/* Контакты справа (на больших экранах) */}
             <div className="absolute top-1/2 right-[-180px] hidden -translate-y-1/2 flex-col items-start gap-1 text-xs leading-tight text-slate-700 lg:flex">
               <ul className="space-y-1.5">
                 <li>
@@ -250,7 +257,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
         <main className="flex-1 mx-auto w-full max-w-6xl px-4 py-10">{children}</main>
 
-        {/* Плавающие контакты */}
+        {/* Плавающие иконки */}
         <FloatingContacts />
 
         <ConsentAttach />
