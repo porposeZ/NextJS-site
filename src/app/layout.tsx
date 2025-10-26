@@ -41,14 +41,16 @@ export const metadata: Metadata = {
     images: ["/logo/logo.png"],
   },
   // фавиконки
-  icons: {
-    icon: [
-      { url: "/favicon.ico", sizes: "any" },
-      { url: "/favicon-32x32.png", type: "image/png", sizes: "32x32" },
-      { url: "/favicon-16x16.png", type: "image/png", sizes: "16x16" },
-    ],
-    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180" }],
-  },
+ icons: {
+  icon: [
+    { url: "/favicon.ico", sizes: "any" },
+    { url: "/favicon.svg", type: "image/svg+xml" },       // ← опционально
+    { url: "/favicon-32x32.png", type: "image/png", sizes: "32x32" },
+    { url: "/favicon-16x16.png", type: "image/png", sizes: "16x16" },
+  ],
+  apple: [{ url: "/apple-touch-icon.png", sizes: "180x180" }],
+},
+
   manifest: "/site.webmanifest",
   // можно оставить либо это поле, либо meta-тег ниже (оба работать будут)
   verification: {
@@ -239,7 +241,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                   </a>
                 </li>
                 <li>
-                  <a href="tel:3912162584" className="group flex items-center gap-2 font-medium text-slate-800 transition-colors hover:text-sky-700">
+                  <a href="tel:+73912162584" className="group flex items-center gap-2 font-medium text-slate-800 transition-colors hover:text-sky-700">
                     <PhoneIcon className="h-4 w-4 text-slate-400 group-hover:text-sky-600" />
                     <span>+7 391 216-25-84</span>
                   </a>
