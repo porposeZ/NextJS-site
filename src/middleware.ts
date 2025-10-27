@@ -41,36 +41,42 @@ const T_DOMAINS = [
 
 /** собираем CSP c учётом платежей */
 function buildCsp(nonce: string) {
-  // базовый набор
-  const directives: Record<string, string> = {
+  const allowTinkoff = !!env.TINKOFF_TERMINAL_KEY;
+
+  const base: Record<string, string> = {
     "default-src": `'self'`,
     "script-src": `'self' 'strict-dynamic' 'nonce-${nonce}' https: http:`,
     "style-src": `'self' 'unsafe-inline'`,
     "img-src": `* data: blob:`,
     "connect-src": `*`,
     "font-src": `'self' data:`,
-    // ВАЖНО: когда платежи выключены — можно оставить frame-src,
-    // но при iframe-оплате эту директиву иметь НЕЛЬЗЯ (ломает 3DS).
-    "frame-src": `*`,
-    // при желании можно вернуть base-uri/form-action/object-src и т.д.
+    // если платежи ВЫКЛЮЧЕНЫ — разрешим фреймы для метрики
+    ...(allowTinkoff ? {} : { "frame-src": `'self' https://mc.yandex.ru` }),
+    // защита встраивания сайта в чужие фреймы
+    "frame-ancestors": `'none'`,
+    "form-action": `'self'`,
+    "base-uri": `'self'`,
   };
 
-  // если включены платежи — расширяем и убираем frame-src
-  if (env.TINKOFF_TERMINAL_KEY) {
-    const add = ` https://${T_DOMAINS.join(" https://")}`;
-    directives["script-src"] += add;
-    directives["img-src"] += add;
-    directives["connect-src"] += add;
-    directives["style-src"] += add;
+  if (allowTinkoff) {
+    const t = [
+      "*.tinkoff.ru",
+      "*.tcsbank.ru",
+      "*.tbank.ru",
+      "*.nspk.ru",
+      "*.t-static.ru",
+    ]
+      .map(d => `https://${d}`)
+      .join(" ");
 
-    // критично: директиву frame-src удаляем целиком
-    delete directives["frame-src"];
+    base["script-src"]  += ` ${t}`;
+    base["style-src"]   += ` ${t}`;
+    base["img-src"]     += ` ${t}`;
+    base["connect-src"] += ` ${t}`;
+    // ВАЖНО: frame-src намеренно отсутствует для 3DS
   }
 
-  // собираем строку
-  return Object.entries(directives)
-    .map(([k, v]) => `${k} ${v}`)
-    .join("; ");
+  return Object.entries(base).map(([k,v]) => `${k} ${v}`).join("; ");
 }
 
 export async function middleware(req: NextRequest) {

@@ -5,7 +5,7 @@ import ServicesStrip from "~/components/ServicesStrip";
 import Steps from "~/components/Steps";
 import HomeForm from "./HomeForm";
 
-export const metadata = { title: "Я есть — поручения в любом городе" };
+export const metadata = { title: "Я есть — свой человек в другом городе" };
 
 export default async function HomePage() {
   const session = await auth();

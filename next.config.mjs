@@ -18,22 +18,6 @@ const config = {
   { key: "X-Content-Type-Options", value: "nosniff" },
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
   { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
-  {
-    key: "Content-Security-Policy",
-    value: [
-      "default-src 'self'",
-      // ⬇⬇⬇ добавили 'unsafe-inline'
-      "script-src 'self' 'unsafe-eval' 'unsafe-inline' blob:",
-      "style-src 'self' 'unsafe-inline'",
-      "img-src 'self' data: https:",
-      "font-src 'self' data:",
-      // добавил wss: на всякий случай для HMR в некоторых окружениях
-      "connect-src 'self' ws: wss: http://localhost:* http://127.0.0.1:* https://api.resend.com",
-      "frame-ancestors 'none'",
-      "form-action 'self'",
-      "base-uri 'self'",
-    ].join('; '),
-  },
 ];
 
 
@@ -42,21 +26,6 @@ const config = {
       { key: "X-Content-Type-Options", value: "nosniff" },
       { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
       { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
-      {
-        key: "Content-Security-Policy",
-        value: [
-          "default-src 'self'",
-          "script-src 'self'",
-          "style-src 'self' 'unsafe-inline'",
-          "img-src 'self' data: https:",
-          "font-src 'self' data:",
-          "connect-src 'self' https://api.resend.com",
-          "frame-ancestors 'none'",
-          "form-action 'self'",
-          "base-uri 'self'",
-          "upgrade-insecure-requests",
-        ].join("; "),
-      },
     ];
 
     return [{ source: "/(.*)", headers: isDev ? devSecurityHeaders : prodSecurityHeaders }];
