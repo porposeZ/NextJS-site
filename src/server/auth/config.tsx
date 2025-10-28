@@ -10,21 +10,52 @@ import { env } from "~/server/env";
 import { sendMail } from "~/server/email/send";
 import MagicLinkEmail from "~/emails/MagicLinkEmail";
 
-const BASE_AUTH_URL = env.NEXTAUTH_URL || env.AUTH_URL;
-if (!BASE_AUTH_URL) {
-  throw new Error("Configure NEXTAUTH_URL or AUTH_URL (e.g. https://www.yayest.site)");
+// 1) Базовый URL авторизации — обязан быть задан
+const RAW_BASE_AUTH_URL = env.NEXTAUTH_URL || env.AUTH_URL;
+if (!RAW_BASE_AUTH_URL) {
+  throw new Error("Configure NEXTAUTH_URL or AUTH_URL (e.g. https://yayest.site)");
 }
-const ALLOWED_HOST = new URL(BASE_AUTH_URL).hostname;
+
+const BASE_URL = new URL(RAW_BASE_AUTH_URL);
+
+// 2) Домен для куки: .yayest.site (работает и на www, и на корне)
+const ROOT_HOST = BASE_URL.hostname.replace(/^www\./, "");
+const COOKIE_DOMAIN = `.${ROOT_HOST}`;
+
+// 3) Хост, который разрешаем в магической ссылке (строго из env)
+const ALLOWED_HOST = BASE_URL.hostname;
 
 // Любая валидная SMTP-строка, чтобы провайдер не ругался (фактически не используется)
 const DUMMY_SMTP_URL = process.env.SMTP_URL ?? "smtp://user:pass@localhost:587";
 
 export const authConfig: NextAuthConfig = {
   adapter: PrismaAdapter(db),
-  trustHost: env.AUTH_TRUST_HOST === "true",
+
+  // В проде за CDN/прокси это должно быть true
+  trustHost: true,
+
   secret: env.AUTH_SECRET,
   session: { strategy: "jwt" },
   debug: process.env.NODE_ENV === "development",
+
+  // 4) Явно задаём куку с доменом .yayest.site
+  //    Имя куки оставляем дефолтным, но даём опции домена/безопасности.
+  cookies: {
+    sessionToken: {
+      // В проде NextAuth сам префиксует __Secure-, если secure=true и HTTPS.
+      name:
+        process.env.NODE_ENV === "production"
+          ? "__Secure-next-auth.session-token"
+          : "next-auth.session-token",
+      options: {
+        domain: COOKIE_DOMAIN, // ← критично
+        path: "/",
+        sameSite: "lax",
+        httpOnly: true,
+        secure: true,
+      },
+    },
+  },
 
   pages: {
     signIn: "/auth/signin",
@@ -34,11 +65,13 @@ export const authConfig: NextAuthConfig = {
 
   providers: [
     EmailProvider({
-      server: DUMMY_SMTP_URL,     // ✅ простая строка — без типов nodemailer
+      server: DUMMY_SMTP_URL,
       from: env.EMAIL_FROM,
       maxAge: 10 * 60,
       async sendVerificationRequest({ identifier, url }) {
         const parsed = new URL(url);
+
+        // Разрешаем только тот хост, что задан в env (защита от несоответствий)
         if (parsed.hostname !== ALLOWED_HOST) {
           throw new Error("Disallowed callback host");
         }
