@@ -1,4 +1,3 @@
-// src/app/actions/createOrder.ts
 "use server";
 
 import React from "react";
@@ -91,6 +90,7 @@ export async function createOrder(raw: unknown): Promise<CreateOrderResult | voi
         const code = (e as { code?: string } | null)?.code;
         if (code !== "P2002") {
           // игнорируем уникальные конфликты и т.п., чтобы не мешать созданию заказа
+          // eslint-disable-next-line no-console
           console.warn("[orders] user phone update skipped:", e);
         }
       }
@@ -140,6 +140,7 @@ export async function createOrder(raw: unknown): Promise<CreateOrderResult | voi
           }),
         });
       } catch (e) {
+        // eslint-disable-next-line no-console
         console.warn("[email] admin new-order failed:", e);
       }
     }
@@ -156,9 +157,11 @@ export async function createOrder(raw: unknown): Promise<CreateOrderResult | voi
       // старый программный вызов → вернём id
       return { ok: true, id: order.id };
     }
-  } catch (e: any) {
+  } catch (e: unknown) {
+    const err = e as { code?: string; message?: string; stack?: string } | null;
+
     // Ключевой лог — именно он даст нам корень 500 в проде
-    await logServerError("CREATE_ORDER", e, {
+    await logServerError("CREATE_ORDER", err ?? e, {
       userId,
       city,
       hasDetails: !!details,
@@ -166,7 +169,7 @@ export async function createOrder(raw: unknown): Promise<CreateOrderResult | voi
     });
 
     if (!(raw instanceof FormData)) {
-      const code = (e?.code as string | undefined) ?? undefined;
+      const code = err?.code;
       if (code) return { ok: false, error: "DB_ERROR", details: code };
       return { ok: false, error: "UNKNOWN" };
     }

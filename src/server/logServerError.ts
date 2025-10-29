@@ -17,17 +17,16 @@ export async function logServerError(
 
   try {
     const h = await headers();
-    rid = h.get("x-vercel-id") || h.get("x-request-id") || rid;
-    ua = h.get("user-agent") || ua;
-    ip = h.get("x-forwarded-for") || ip;
-    ref = h.get("referer") || ref;
+    rid = h.get("x-vercel-id") ?? h.get("x-request-id") ?? rid;
+    ua = h.get("user-agent") ?? ua;
+    ip = h.get("x-forwarded-for") ?? ip;
+    ref = h.get("referer") ?? ref;
   } catch {
     // заголовки недоступны (например, вне запроса) — игнорируем
   }
 
-  const e = err as { code?: string; message?: string; stack?: string };
+  const e = err as { code?: string; message?: string; stack?: string } | null;
 
-  // Эта запись появится в Vercel → Deployments → Runtime Logs
   console.error(`[${scope}]`, {
     requestId: rid,
     ip,
