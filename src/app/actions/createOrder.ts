@@ -11,6 +11,7 @@ import { env } from "~/server/env";
 import { sendMail } from "~/server/email/send";
 import NewOrderEmail from "~/emails/NewOrderEmail";
 import { attachConsentsFromCookie } from "~/server/consents";
+import { logServerError } from "~/server/logServerError";
 
 /**
  * Поля, которые присылает форма на главной:
@@ -28,11 +29,8 @@ export type CreateOrderResult =
   | { ok: true; id: string }
   | {
       ok: false;
-      error:
-        | "NOT_AUTHENTICATED"
-        | "VALIDATION_ERROR"
-        | "DB_ERROR"
-        | "RATE_LIMIT";
+      error: "NOT_AUTHENTICATED" | "VALIDATION_ERROR" | "DB_ERROR" | "RATE_LIMIT" | "UNKNOWN";
+      details?: string;
     };
 
 /**
@@ -40,9 +38,7 @@ export type CreateOrderResult =
  * - если пришёл FormData (Server Action формы) → создаёт заказ и делает redirect("/thanks")
  * - если пришёл произвольный объект (старый вызов) → возвращает { ok, id } без редиректа
  */
-export async function createOrder(
-  raw: unknown
-): Promise<CreateOrderResult | void> {
+export async function createOrder(raw: unknown): Promise<CreateOrderResult | void> {
   const session = await auth();
   const userId = session?.user?.id;
 
@@ -51,7 +47,7 @@ export async function createOrder(
     redirect("/api/auth/signin");
   }
 
-  // Преобразуем вход в обычный объект, независимо от того FormData это или plain object
+  // Преобразуем вход в обычный объект
   const asObject =
     typeof FormData !== "undefined" && raw instanceof FormData
       ? Object.fromEntries(raw.entries())
@@ -59,11 +55,7 @@ export async function createOrder(
 
   const parsed = Input.safeParse(asObject);
   if (!parsed.success) {
-    // В режиме Server Action (FormData) — просто не редиректим, чтобы форма могла показать ошибки (если нужно).
-    // Совместимость со старым типом:
-    if (!(raw instanceof FormData)) {
-      return { ok: false, error: "VALIDATION_ERROR" };
-    }
+    if (!(raw instanceof FormData)) return { ok: false, error: "VALIDATION_ERROR" };
     return;
   }
 
@@ -73,11 +65,10 @@ export async function createOrder(
   const digits = (rawPhone ?? "").replace(/\D/g, "");
   const normalizedPhone = digits.length ? `+${digits}` : null;
 
-  const due = new Date(`${date}T00:00:00.000Z`);
+  // Берём полдень UTC, чтобы дата не «съезжала» из-за TZ
+  const due = new Date(`${date}T12:00:00Z`);
   if (Number.isNaN(due.getTime())) {
-    if (!(raw instanceof FormData)) {
-      return { ok: false, error: "VALIDATION_ERROR" };
-    }
+    if (!(raw instanceof FormData)) return { ok: false, error: "VALIDATION_ERROR", details: "Invalid date" };
     return;
   }
 
@@ -165,11 +156,20 @@ export async function createOrder(
       // старый программный вызов → вернём id
       return { ok: true, id: order.id };
     }
-  } catch (e) {
-    console.error("[orders] create failed:", e);
+  } catch (e: any) {
+    // Ключевой лог — именно он даст нам корень 500 в проде
+    await logServerError("CREATE_ORDER", e, {
+      userId,
+      city,
+      hasDetails: !!details,
+      date,
+    });
+
     if (!(raw instanceof FormData)) {
-      return { ok: false, error: "DB_ERROR" };
+      const code = (e?.code as string | undefined) ?? undefined;
+      if (code) return { ok: false, error: "DB_ERROR", details: code };
+      return { ok: false, error: "UNKNOWN" };
     }
-    // в режиме формы просто ничего не возвращаем — оставим страницу как есть
+    // В режиме формы оставляем страницу как есть (ошибка уже в логах)
   }
 }
