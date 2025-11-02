@@ -90,7 +90,6 @@ export async function createOrder(raw: unknown): Promise<CreateOrderResult | voi
         const code = (e as { code?: string } | null)?.code;
         if (code !== "P2002") {
           // игнорируем уникальные конфликты и т.п., чтобы не мешать созданию заказа
-          // eslint-disable-next-line no-console
           console.warn("[orders] user phone update skipped:", e);
         }
       }
@@ -140,7 +139,6 @@ export async function createOrder(raw: unknown): Promise<CreateOrderResult | voi
           }),
         });
       } catch (e) {
-        // eslint-disable-next-line no-console
         console.warn("[email] admin new-order failed:", e);
       }
     }

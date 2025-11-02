@@ -1,13 +1,12 @@
 "use client";
 
-import { useCallback, useState, useTransition } from "react";
+import { useCallback, useRef, useState } from "react";
 import { signIn } from "next-auth/react";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 
 export default function SignInForm({
-  // CSRF больше не используем — подчёркиваем это префиксом "_"
   _initialCsrfToken = "",
   callbackUrl = "/orders",
 }: {
@@ -15,7 +14,8 @@ export default function SignInForm({
   callbackUrl?: string;
 }) {
   const [email, setEmail] = useState("");
-  const [pending, startTransition] = useTransition();
+  const [submitting, setSubmitting] = useState(false); // <- явный флаг отправки
+  const lockRef = useRef(false); // <- защита от дабл-кликов/повторной отправки
 
   // чекбоксы согласий
   const [policy, setPolicy] = useState(false);
@@ -26,11 +26,15 @@ export default function SignInForm({
     async (e: React.FormEvent<HTMLFormElement>) => {
       e.preventDefault();
 
+      if (lockRef.current || submitting) return; // уже отправляем
       const value = email.trim().toLowerCase();
       if (!value || !policy) return;
 
-      // 1) стэш согласий
+      lockRef.current = true;
+      setSubmitting(true);
+
       try {
+        // 1) стэш согласий (не критично, если упадёт)
         await fetch("/api/consents/stash", {
           method: "POST",
           headers: { "content-type": "application/json" },
@@ -38,21 +42,22 @@ export default function SignInForm({
             email: value,
             consent: { policy, orderEmails, marketing },
           }),
-        });
-      } catch {
-        /* ignore */
-      }
+        }).catch(() => undefined);
 
-      // 2) стандартный вход через Auth.js
-      startTransition(() => {
-        void signIn("email", { email: value, callbackUrl, redirect: true });
-      });
+        // 2) вход через Auth.js
+        // При redirect: true произойдёт навигация и компонент размонтируется.
+        await signIn("email", { email: value, callbackUrl, redirect: true });
+      } catch {
+        // Если что-то пошло не так и редиректа не случилось — вернём управление
+        setSubmitting(false);
+        lockRef.current = false;
+      }
     },
-    [email, policy, orderEmails, marketing, callbackUrl]
+    [email, policy, orderEmails, marketing, callbackUrl, submitting]
   );
 
   return (
-    <form className="grid gap-4" onSubmit={onSubmit}>
+    <form className="grid gap-4" onSubmit={onSubmit} aria-busy={submitting}>
       <div>
         <Label>Электронная почта</Label>
         <Input
@@ -62,6 +67,7 @@ export default function SignInForm({
           required
           value={email}
           onChange={(e) => setEmail(e.target.value)}
+          disabled={submitting}
         />
       </div>
 
@@ -73,6 +79,7 @@ export default function SignInForm({
             checked={policy}
             onChange={(e) => setPolicy(e.target.checked)}
             required
+            disabled={submitting}
           />
           <span>
             Я принимаю{" "}
@@ -93,6 +100,7 @@ export default function SignInForm({
             className="mt-1"
             checked={orderEmails}
             onChange={(e) => setOrderEmails(e.target.checked)}
+            disabled={submitting}
           />
           <span>Присылать сервисные письма по заказам (создание/смена статуса).</span>
         </label>
@@ -103,6 +111,7 @@ export default function SignInForm({
             className="mt-1"
             checked={marketing}
             onChange={(e) => setMarketing(e.target.checked)}
+            disabled={submitting}
           />
           <span>Редкие новости и предложения (необязательно).</span>
         </label>
@@ -110,11 +119,33 @@ export default function SignInForm({
 
       <Button
         type="submit"
-        className="bg-orange-500 hover:bg-orange-600"
-        disabled={!policy || !email || pending}
+        className="bg-orange-500 hover:bg-orange-600 disabled:opacity-70 disabled:cursor-not-allowed"
+        disabled={!policy || !email || submitting}
       >
-        {pending ? "Отправляем ссылку..." : "Получить ссылку"}
+        {submitting ? (
+          <span className="inline-flex items-center gap-2">
+            <svg
+              className="h-4 w-4 animate-spin"
+              viewBox="0 0 24 24"
+              fill="none"
+              aria-hidden="true"
+            >
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+            </svg>
+            Отправляем ссылку…
+          </span>
+        ) : (
+          "Получить ссылку"
+        )}
       </Button>
+
+      {/* Подсказка пользователю */}
+      {submitting && (
+        <p className="text-center text-xs text-slate-500">
+          Проверьте почту. Если письма нет — загляните в «Спам».
+        </p>
+      )}
     </form>
   );
 }
