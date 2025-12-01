@@ -215,7 +215,13 @@ export async function POST(req: Request) {
       ...(dispatcher ? { dispatcher } : {}),
     });
 
-    const data: unknown = await resp.json().catch(() => ({}));
+    const rawText = await resp.text();
+    let data: unknown = {};
+    try {
+      data = JSON.parse(rawText);
+    } catch {
+      data = rawText;
+    }
 
     // Безопасное извлечение Success
     const success =
@@ -226,16 +232,18 @@ export async function POST(req: Request) {
       console.error("[tinkoff Init] fail:", {
         httpStatus: resp.status,
         apiBase,
-        message: d?.Message,
+        message: d?.Message ?? (typeof data === "string" ? data : undefined),
         details: d?.Details,
         errorCode: d?.ErrorCode,
         sent: bodyBase,
+        statusText: resp.statusText,
       });
 
       const errText =
         (d?.Message as string | undefined) ??
         (d?.Details as string | undefined) ??
         (d?.ErrorCode as string | undefined) ??
+        (typeof data === "string" && data ? data : undefined) ??
         `Init failed (HTTP ${resp.status})`;
 
       return NextResponse.json({ ok: false, error: String(errText), raw: d }, { status: 500 });
