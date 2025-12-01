@@ -41,6 +41,9 @@ export const env = createEnv({
     TINKOFF_CREATE_DEAL_TYPE: z.string().optional(),
     TINKOFF_LEVEL_OF_CONFIDENCE: z.enum(["low", "moderate", "high"]).optional(),
     TINKOFF_SEND_URLS: z.enum(["true", "false"]).optional(),
+    // mTLS для acqapi(-test).tinkoff.ru (base64 PEM)
+    TINKOFF_CLIENT_CERT_BASE64: z.string().optional(),
+    TINKOFF_CLIENT_KEY_BASE64: z.string().optional(),
 
     // оставим для совместимости (не обязательно)
     TINKOFF_API_TOKEN: z.string().optional(),
@@ -86,6 +89,8 @@ export const env = createEnv({
     TINKOFF_CREATE_DEAL_TYPE: process.env.TINKOFF_CREATE_DEAL_TYPE,
     TINKOFF_LEVEL_OF_CONFIDENCE: process.env.TINKOFF_LEVEL_OF_CONFIDENCE,
     TINKOFF_SEND_URLS: process.env.TINKOFF_SEND_URLS,
+    TINKOFF_CLIENT_CERT_BASE64: process.env.TINKOFF_CLIENT_CERT_BASE64,
+    TINKOFF_CLIENT_KEY_BASE64: process.env.TINKOFF_CLIENT_KEY_BASE64,
     TINKOFF_API_TOKEN: process.env.TINKOFF_API_TOKEN, // можно не задавать
     PAYMENTS_SUCCESS_URL: process.env.PAYMENTS_SUCCESS_URL,
     PAYMENTS_FAIL_URL: process.env.PAYMENTS_FAIL_URL,

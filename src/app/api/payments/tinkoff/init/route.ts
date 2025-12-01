@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import crypto from "node:crypto";
+import { Agent as UndiciAgent } from "undici";
 import { env } from "~/server/env";
 
 const PROD_API_BASE = "https://acqapi.tinkoff.ru";
@@ -62,6 +63,24 @@ function makeTinkoffToken(payload: Record<string, unknown>, password: string) {
 
 function shortAttemptId() {
   return Math.random().toString(36).slice(2, 8);
+}
+
+function createTinkoffDispatcher() {
+  const certB64 = (env.TINKOFF_CLIENT_CERT_BASE64 ?? "").trim();
+  const keyB64 = (env.TINKOFF_CLIENT_KEY_BASE64 ?? "").trim();
+  if (!certB64 || !keyB64) return undefined;
+
+  try {
+    return new UndiciAgent({
+      connect: {
+        cert: Buffer.from(certB64, "base64"),
+        key: Buffer.from(keyB64, "base64"),
+      },
+    });
+  } catch (e) {
+    console.error("[tinkoff Init] failed to create mTLS agent:", e);
+    return undefined;
+  }
 }
 
 type TinkoffInitBody = {
@@ -187,11 +206,13 @@ export async function POST(req: Request) {
     const body = { ...bodyBase, Token };
 
     const apiBase = resolveApiBase();
+    const dispatcher = createTinkoffDispatcher();
     const resp = await fetch(`${apiBase}/v2/Init`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
       cache: "no-store",
+      ...(dispatcher ? { dispatcher } : {}),
     });
 
     const data: unknown = await resp.json().catch(() => ({}));
